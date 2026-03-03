@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memory-caching-repro"
+version = "0.1.0"
+description = "PyTorch reproduction scaffold for Memory Caching (arXiv:2602.24281)"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+authors = [
+  { name = "kmccleary3301" }
+]
+dependencies = [
+  "torch>=2.3",
+  "einops>=0.8",
+  "pyyaml>=6.0",
+  "typer>=0.12"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.5",
+  "mypy>=1.10"
+]
+
+[project.scripts]
+mc = "memory_caching.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

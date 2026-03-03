@@ -1,17 +1,42 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 AggregationVariant = Literal["residual", "grm", "soup", "ssc"]
 SegmentationMode = Literal["constant", "logarithmic"]
 StateInitMode = Literal["checkpoint", "restart"]
+BackendKind = Literal["linear", "dla"]
+DLAObjective = Literal["dot", "l2"]
+DLAInnerUpdateMode = Literal["stopgrad", "differentiable"]
+
+
+@dataclass(frozen=True)
+class DLAConfig:
+    memory_width: int = 64
+    memory_depth: int = 2
+    objective: DLAObjective = "dot"
+    inner_update_mode: DLAInnerUpdateMode = "stopgrad"
+    step_size: float = 0.05
+    momentum: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.memory_width <= 0:
+            raise ValueError("memory_width must be positive")
+        if self.memory_depth < 2:
+            raise ValueError("memory_depth must be at least 2")
+        if self.step_size <= 0:
+            raise ValueError("step_size must be positive")
+        if not (0.0 <= self.momentum < 1.0):
+            raise ValueError("momentum must be in [0, 1)")
 
 
 @dataclass(frozen=True)
 class MCConfig:
     d_model: int
     num_heads: int
+    backend: BackendKind = "linear"
+    dla: DLAConfig = field(default_factory=DLAConfig)
     aggregation: AggregationVariant = "grm"
     segmentation: SegmentationMode = "constant"
     segment_size: int = 256

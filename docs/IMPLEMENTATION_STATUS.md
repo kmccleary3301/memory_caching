@@ -1,45 +1,40 @@
 # Implementation Status
 
-## Phase 1
+## Completed
 
-### Completed
-
-- MC configuration schema and validation
-- Segment cache and backend protocol contracts
-- Segmentation utilities:
-  - constant-size segmentation
-  - logarithmic segmentation
-  - explicit segment-length validation
-- Linear memory backend:
-  - matrix-valued update and retrieval
-  - state mixing operation for Soup path
-- MC layer with aggregators:
+- MC configuration schema and validation.
+- Segment cache and backend protocol contracts.
+- Segmentation utilities (constant/logarithmic + explicit lengths validation).
+- Linear backend (update/apply/mix).
+- DLA backend prototype:
+  - dot/L2 inner objectives
+  - stopgrad/differentiable update modes
+  - state mixing support for Soup
+- MC layer aggregators:
   - Residual
   - GRM
-  - Memory Soup
+  - Soup
   - SSC
 - State init modes:
-  - checkpoint carry across segments
-  - restart per segment
+  - checkpoint
+  - restart
 - CLI commands:
   - status
-  - variant listing
-  - segment inspection
+  - list-variants
+  - segment
   - smoke-train
   - smoke-eval
-- Focused test suite:
-  - segmentation determinism
-  - linear backend arithmetic
-  - causality/no-future-leak check
-  - linear backend GRM-vs-Soup equivalence
+  - bench niah
+  - bench mqar
+- Synthetic benchmark harnesses:
+  - deterministic NIAH generators and scoring
+  - deterministic MQAR generators and scoring
+  - artifact bundle writer (`metrics.json` + `manifest.json`)
+- Expanded test suite for layer, DLA, smoke, and benchmark determinism.
 
-### Remaining in Phase 1
+## Remaining
 
-- Extend smoke harness into a paper-oriented benchmark runner contract
-- Add reproducibility artifacts for benchmark prompt templates and scoring
-
-## Out of scope (current phase)
-
-- Paper-scale training and exact metric parity
-- Throughput-optimized kernels
-- Full deep-memory backend parity (DLA/Titans)
+- Titans backend implementation.
+- LongBench/retrieval benchmark integration.
+- Paper-scale data/training recipe parity.
+- Throughput and large-scale parity evidence.

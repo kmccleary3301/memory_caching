@@ -5,43 +5,39 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 ## Status
 
 - This repository is **not** an official release from the paper authors.
-- Current phase targets **mechanism-faithful implementation** before paper-scale metric parity.
+- Current work targets mechanism-faithful implementation before paper-scale metric parity.
 - We do **not** currently claim exact reproduction of published numbers.
 
-## Current implementation scope
+## Current scope
 
-- Core MC wrapper with:
-  - Residual Memory
-  - Gated Residual Memory (GRM)
-  - Memory Soup (state-mixing path when backend supports it)
-  - Sparse Selective Caching (SSC)
-- Segmentation modes:
-  - Constant segment size
-  - Logarithmic segmentation via binary decomposition
-- Baseline recurrent backend:
-  - Matrix-valued linear memory (outer-product update)
-- Smoke harness:
-  - Tiny synthetic next-token training/eval loops over MC layer
-
-## Repository layout
-
-- `docs/PHASE_1_PLAN.md`: implementation plan and acceptance checks
-- `docs/IMPLEMENTATION_STATUS.md`: implementation progress snapshot
-- `docs/reproduction_report.md`: current claim/evidence status
-- `docs/PAPER_ARTIFACT_PIN.md`: local paper artifact pinning
-- `src/memory_caching/`: implementation package
-- `tests/`: focused Phase 1 invariants
+- Core MC wrapper with Residual / GRM / Soup / SSC.
+- Segmentation modes: constant and logarithmic.
+- Backends: linear matrix memory + DLA prototype backend.
+- Smoke harness for train/eval (linear and DLA paths).
+- Synthetic benchmark harness: NIAH + MQAR with artifact manifests.
 
 ## Quickstart
 
 ```bash
 uv sync --extra dev
-uv run mc status
-uv run mc list-variants
-uv run mc segment --length 37 --mode logarithmic
-uv run mc smoke-train --steps 20 --device cpu
-uv run mc smoke-eval --device cpu --warmup-steps 10
+uv run python -m pytest -q
+uv run mc smoke-train --steps 20 --device cpu --backend linear
+uv run mc smoke-eval --warmup-steps 2 --device cpu --backend dla --d-model 8 --num-heads 2 --vocab-size 16 --seq-len 8 --batch-size 1
+uv run mc bench niah --adapter both --tasks s_niah_1,s_niah_2,s_niah_3 --context-lengths 4096,8192 --samples-per-length 8
+uv run mc bench mqar --adapter both --samples 32 --num-pairs 16 --num-queries 4
 ```
+
+## Project docs
+
+- `docs/PHASE_1_PLAN.md`
+- `docs/IMPLEMENTATION_STATUS.md`
+- `docs/reproduction_report.md`
+- `docs/CLAIM_TO_EVIDENCE_MATRIX.md`
+- `docs/BENCHMARK_PROTOCOL.md`
+- `docs/RELEASE_GATE_CHECKLIST_V0.md`
+- `docs/PROGRESS_LEDGER.md`
+- `docs/ARTIFACT_MANIFEST.md`
+- `docs/PAPER_ARTIFACT_PIN.md`
 
 ## Notes
 

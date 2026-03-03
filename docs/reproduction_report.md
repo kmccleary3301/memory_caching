@@ -7,60 +7,37 @@ Target paper: *Memory Caching: RNNs with Growing Memory* (arXiv:2602.24281v1, 20
 
 This repository currently provides mechanism-level implementation evidence for core Memory Caching operations. It does not yet claim paper-level benchmark parity.
 
-## Implemented mechanisms
+## Supported claims
 
-1. Segmentation and memory caching lifecycle
-- Constant and logarithmic segmentation utilities
-- Segment cache snapshots with context summaries
-- Segment start modes: checkpoint carry and restart
+- Core MC segmentation and cache lifecycle are implemented.
+- Aggregators (Residual, GRM, Soup, SSC) are implemented.
+- Linear backend is implemented and tested.
+- DLA backend prototype is implemented with dot/L2 objective options and stopgrad/differentiable update modes.
+- Smoke harness supports both linear and DLA backend paths.
+- Synthetic NIAH and MQAR benchmark harnesses are implemented with deterministic generation and exact-match scoring.
+- Benchmark artifact outputs include schema-versioned manifest files.
 
-2. Retrieval aggregators
-- Residual Memory
-- GRM (context-aware gating over segment summaries)
-- Memory Soup (state-mixing route when backend supports state mixing)
-- SSC (top-k segment routing + online memory inclusion)
+## Unsupported claims
 
-3. Backend support
-- Linear matrix-valued recurrent memory backend with:
-  - outer-product write update
-  - query-time retrieval
-  - weighted state mixing
-
-4. Smoke execution harness
-- Tiny synthetic next-token training loop
-- Tiny synthetic eval loop
-- Cache statistics reporting for quick integration checks
+- Exact benchmark parity with paper-reported numbers.
+- Full-scale distributed training parity.
+- Exact unpublished author implementation parity for deep-memory optimizer internals.
+- Throughput parity claims against paper systems.
 
 ## Current evidence package
 
-1. Unit tests (implemented)
-- Segmentation decomposition and validation
-- Linear backend update/apply/mix arithmetic
-- Causality guardrail: future-token perturbation does not alter past outputs
-- Linear-memory equivalence: GRM and Soup consistency under shared projections
-
-2. Smoke commands (implemented)
-- `mc smoke-train`
-- `mc smoke-eval`
+- Unit tests covering segmentation, linear backend math, layer causality/SSC behavior, DLA backend semantics, smoke schema persistence, and benchmark determinism.
+- CLI harnesses for smoke and synthetic benchmarks.
+- Claim-to-evidence matrix and release gate checklist.
 
 ## Known gaps to full reproduction
 
-1. Deep memory modules are not yet implemented
-- DLA-style inner objective updates
-- Titans-style memory+optimizer-state updates
+- Full Titans backend implementation is not yet complete.
+- LongBench and retrieval benchmark integrations are not yet complete.
+- Paper-scale data/training recipe parity remains open.
 
-2. Benchmark protocol parity is not yet implemented
-- NIAH prompt generation + official scoring parity
-- LongBench/retrieval task harness and truncation contracts
-- MQAR protocol wiring
+## Next milestones
 
-3. Data/training recipe parity is not yet implemented
-- Pretraining corpus composition and tokenizer parity
-- Full optimizer schedule parity
-- Large-scale distributed training recipe
-
-## Next integration milestones
-
-1. Implement deep-memory backend interface extensions and DLA backend.
-2. Implement Titans-style backend with explicit inner-state semantics.
-3. Add benchmark runners with evidence outputs (JSON + markdown summaries).
+1. Complete Titans backend and parity tests.
+2. Add LongBench/retrieval runners with artifact outputs.
+3. Add scale-oriented training recipe and evidence reports.

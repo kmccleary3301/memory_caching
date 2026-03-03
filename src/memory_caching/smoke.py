@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Literal
+import json
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .backends.dla import DLABackend
 from .backends.linear import LinearMemoryBackend
-from .config import MCConfig
+from .config import BackendKind, DLAConfig, MCConfig
 from .layer import MemoryCachingLayer
 
 Aggregation = Literal["residual", "grm", "soup", "ssc"]
@@ -18,12 +21,14 @@ StateInit = Literal["checkpoint", "restart"]
 _VALID_AGGREGATIONS = {"residual", "grm", "soup", "ssc"}
 _VALID_SEGMENTATIONS = {"constant", "logarithmic"}
 _VALID_STATE_INIT = {"checkpoint", "restart"}
+_VALID_BACKENDS = {"linear", "dla"}
 
 
 @dataclass(frozen=True)
 class SmokeMetrics:
     mode: str
     device: str
+    backend: str
     steps: int
     batch_size: int
     seq_len: int
@@ -47,7 +52,7 @@ class TinyMCLanguageModel(nn.Module):
         self.config = config
 
         self.token_embed = nn.Embedding(vocab_size, config.d_model)
-        self.mc = MemoryCachingLayer(config=config, backend=LinearMemoryBackend())
+        self.mc = MemoryCachingLayer(config=config, backend=_build_backend(config))
         self.norm = nn.LayerNorm(config.d_model)
         self.lm_head = nn.Linear(config.d_model, vocab_size, bias=False)
 
@@ -56,6 +61,14 @@ class TinyMCLanguageModel(nn.Module):
         x = self.mc(x)
         x = self.norm(x)
         return self.lm_head(x)
+
+
+def _build_backend(config: MCConfig):
+    if config.backend == "linear":
+        return LinearMemoryBackend()
+    if config.backend == "dla":
+        return DLABackend(config.dla)
+    raise ValueError(f"unsupported backend: {config.backend}")
 
 
 def _resolve_device(device: str) -> torch.device:
@@ -69,12 +82,19 @@ def _resolve_device(device: str) -> torch.device:
 
 
 def _validate_modes(
-    *, aggregation: str, segmentation: str, state_init_mode: str
-) -> tuple[Aggregation, Segmentation, StateInit]:
+    *,
+    backend: str,
+    aggregation: str,
+    segmentation: str,
+    state_init_mode: str,
+) -> tuple[BackendKind, Aggregation, Segmentation, StateInit]:
+    backend_kind = backend.strip().lower()
     agg = aggregation.strip().lower()
     seg = segmentation.strip().lower()
     init_mode = state_init_mode.strip().lower()
 
+    if backend_kind not in _VALID_BACKENDS:
+        raise ValueError(f"invalid backend: {backend}")
     if agg not in _VALID_AGGREGATIONS:
         raise ValueError(f"invalid aggregation: {aggregation}")
     if seg not in _VALID_SEGMENTATIONS:
@@ -82,7 +102,7 @@ def _validate_modes(
     if init_mode not in _VALID_STATE_INIT:
         raise ValueError(f"invalid state_init_mode: {state_init_mode}")
 
-    return agg, seg, init_mode
+    return backend_kind, agg, seg, init_mode
 
 
 def _make_batch(
@@ -123,6 +143,14 @@ def _cache_stats(model: TinyMCLanguageModel, tokens: torch.Tensor) -> tuple[int,
     return cache_segments, mean_len
 
 
+def _write_metrics(metrics: dict[str, float | int | str], out_json: str | None) -> None:
+    if out_json is None:
+        return
+    path = Path(out_json)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(metrics, sort_keys=True, indent=2) + "\n")
+
+
 def run_smoke_train(
     *,
     steps: int = 20,
@@ -131,6 +159,13 @@ def run_smoke_train(
     vocab_size: int = 128,
     d_model: int = 64,
     num_heads: int = 4,
+    backend: str = "linear",
+    dla_memory_width: int = 64,
+    dla_memory_depth: int = 2,
+    dla_objective: str = "dot",
+    dla_inner_update_mode: str = "stopgrad",
+    dla_step_size: float = 0.05,
+    dla_momentum: float = 0.0,
     segment_size: int = 16,
     aggregation: str = "grm",
     segmentation: str = "constant",
@@ -139,6 +174,7 @@ def run_smoke_train(
     lr: float = 1e-3,
     seed: int = 0,
     device: str = "auto",
+    out_json: str | None = None,
 ) -> dict[str, float | int | str]:
     if steps <= 0:
         raise ValueError("steps must be positive")
@@ -147,7 +183,8 @@ def run_smoke_train(
     if seq_len < 2:
         raise ValueError("seq_len must be at least 2")
 
-    agg, seg, init_mode = _validate_modes(
+    backend_kind, agg, seg, init_mode = _validate_modes(
+        backend=backend,
         aggregation=aggregation,
         segmentation=segmentation,
         state_init_mode=state_init_mode,
@@ -159,6 +196,15 @@ def run_smoke_train(
     config = MCConfig(
         d_model=d_model,
         num_heads=num_heads,
+        backend=backend_kind,
+        dla=DLAConfig(
+            memory_width=dla_memory_width,
+            memory_depth=dla_memory_depth,
+            objective=dla_objective,
+            inner_update_mode=dla_inner_update_mode,
+            step_size=dla_step_size,
+            momentum=dla_momentum,
+        ),
         aggregation=agg,
         segmentation=seg,
         segment_size=segment_size,
@@ -207,6 +253,7 @@ def run_smoke_train(
     metrics = SmokeMetrics(
         mode="train",
         device=str(resolved_device),
+        backend=backend_kind,
         steps=steps,
         batch_size=batch_size,
         seq_len=seq_len,
@@ -218,8 +265,9 @@ def run_smoke_train(
         cache_segments=cache_segments,
         mean_segment_len=mean_segment_len,
         trainable_params=sum(p.numel() for p in model.parameters() if p.requires_grad),
-    )
-    return metrics.to_dict()
+    ).to_dict()
+    _write_metrics(metrics, out_json)
+    return metrics
 
 
 def run_smoke_eval(
@@ -230,6 +278,13 @@ def run_smoke_eval(
     vocab_size: int = 128,
     d_model: int = 64,
     num_heads: int = 4,
+    backend: str = "linear",
+    dla_memory_width: int = 64,
+    dla_memory_depth: int = 2,
+    dla_objective: str = "dot",
+    dla_inner_update_mode: str = "stopgrad",
+    dla_step_size: float = 0.05,
+    dla_momentum: float = 0.0,
     segment_size: int = 16,
     aggregation: str = "grm",
     segmentation: str = "constant",
@@ -238,6 +293,7 @@ def run_smoke_eval(
     lr: float = 1e-3,
     seed: int = 0,
     device: str = "auto",
+    out_json: str | None = None,
 ) -> dict[str, float | int | str]:
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
@@ -246,7 +302,8 @@ def run_smoke_eval(
     if warmup_steps < 0:
         raise ValueError("warmup_steps must be non-negative")
 
-    agg, seg, init_mode = _validate_modes(
+    backend_kind, agg, seg, init_mode = _validate_modes(
+        backend=backend,
         aggregation=aggregation,
         segmentation=segmentation,
         state_init_mode=state_init_mode,
@@ -258,6 +315,15 @@ def run_smoke_eval(
     config = MCConfig(
         d_model=d_model,
         num_heads=num_heads,
+        backend=backend_kind,
+        dla=DLAConfig(
+            memory_width=dla_memory_width,
+            memory_depth=dla_memory_depth,
+            objective=dla_objective,
+            inner_update_mode=dla_inner_update_mode,
+            step_size=dla_step_size,
+            momentum=dla_momentum,
+        ),
         aggregation=agg,
         segmentation=seg,
         segment_size=segment_size,
@@ -297,6 +363,7 @@ def run_smoke_eval(
     metrics = SmokeMetrics(
         mode="eval",
         device=str(resolved_device),
+        backend=backend_kind,
         steps=warmup_steps,
         batch_size=batch_size,
         seq_len=seq_len,
@@ -308,5 +375,6 @@ def run_smoke_eval(
         cache_segments=cache_segments,
         mean_segment_len=mean_segment_len,
         trainable_params=sum(p.numel() for p in model.parameters() if p.requires_grad),
-    )
-    return metrics.to_dict()
+    ).to_dict()
+    _write_metrics(metrics, out_json)
+    return metrics

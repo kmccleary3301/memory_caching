@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 import torch
 
@@ -15,6 +15,7 @@ class SegmentCache:
     seg_len: int
 
 
+@runtime_checkable
 class MemoryBackend(Protocol):
     def init_state(
         self,
@@ -29,3 +30,8 @@ class MemoryBackend(Protocol):
     def update(self, state: Any, k_t: Tensor, v_t: Tensor) -> Any: ...
 
     def apply(self, state: Any, q_t: Tensor) -> Tensor: ...
+
+
+@runtime_checkable
+class MixableMemoryBackend(MemoryBackend, Protocol):
+    def mix_states(self, states: Sequence[Any], weights: Tensor) -> Any: ...

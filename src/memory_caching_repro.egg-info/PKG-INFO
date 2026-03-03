@@ -1,3 +1,19 @@
+Metadata-Version: 2.4
+Name: memory-caching-repro
+Version: 0.1.0
+Summary: PyTorch reproduction scaffold for Memory Caching (arXiv:2602.24281)
+Author: kmccleary3301
+Requires-Python: <3.13,>=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch>=2.3
+Requires-Dist: einops>=0.8
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: typer>=0.12
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+
 # Memory Caching Reproduction (PyTorch)
 
 Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:2602.24281, Feb 27, 2026).

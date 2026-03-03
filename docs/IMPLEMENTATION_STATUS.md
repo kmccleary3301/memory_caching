@@ -5,11 +5,10 @@
 - MC configuration schema and validation.
 - Segment cache and backend protocol contracts.
 - Segmentation utilities (constant/logarithmic + explicit lengths validation).
-- Linear backend (update/apply/mix).
-- DLA backend prototype:
-  - dot/L2 inner objectives
-  - stopgrad/differentiable update modes
-  - state mixing support for Soup
+- Backends:
+  - linear
+  - dla
+  - titans
 - MC layer aggregators:
   - Residual
   - GRM
@@ -24,17 +23,25 @@
   - segment
   - smoke-train
   - smoke-eval
-  - bench niah
-  - bench mqar
+  - bench list/niah/mqar/longbench/retrieval
 - Synthetic benchmark harnesses:
-  - deterministic NIAH generators and scoring
-  - deterministic MQAR generators and scoring
-  - artifact bundle writer (`metrics.json` + `manifest.json`)
-- Expanded test suite for layer, DLA, smoke, and benchmark determinism.
+  - deterministic NIAH generators + scoring
+  - deterministic MQAR generators + micro/macro scoring
+  - LongBench scaffold runner
+  - retrieval scaffold runner
+  - artifact bundle writer (`metrics.json`, `rows.jsonl`, `summary.csv`, `report.md`, `manifest.json`)
+- Bootstrap pipeline scaffolds:
+  - tokenizer config + script
+  - data mixture config + processing script
+  - train profile configs + train loop scaffold
+  - periodic eval hook scaffold
+- Evidence and governance scaffolds:
+  - release gate v1
+  - claim boundary
+  - claim-to-evidence matrix with blocked claims
+  - progress updater and evidence validators
 
 ## Remaining
 
-- Titans backend implementation.
-- LongBench/retrieval benchmark integration.
-- Paper-scale data/training recipe parity.
-- Throughput and large-scale parity evidence.
+- Dataset-backed LongBench/retrieval implementations for parity claims.
+- Full paper-scale training and throughput parity evidence.

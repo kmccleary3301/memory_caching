@@ -1,0 +1,7 @@
+name: mid
+seq_len: 8192
+batch_size: 2
+steps: 5000
+save_every: 250
+eval_every: 250
+checkpoint_dir: artifacts/checkpoints/mid

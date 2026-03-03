@@ -1,6 +1,6 @@
 # Progress Ledger
 
-Date baseline: 2026-03-03
+Date: 2026-03-03
 
 ## Weight model
 
@@ -11,23 +11,30 @@ Date baseline: 2026-03-03
 - Phase 4: 15%
 - Phase 5: 5%
 
-## Computation
+## Current phase completions
 
-Overall progress = sum(phase_weight * phase_completion).
+- phase_0_completion: 100%
+- phase_1_completion: 100%
+- phase_2_completion: 85%
+- phase_3_completion: 70%
+- phase_4_completion: 10%
+- phase_5_completion: 35%
+
+## Weighted computation
+
+Overall =
+
+- 0.10 * 1.00
+- 0.25 * 1.00
+- 0.25 * 0.85
+- 0.20 * 0.70
+- 0.15 * 0.10
+- 0.05 * 0.35
+
+Total: **73.50%**
 
 ## Update rule
 
-1. Update each phase completion as a percentage.
-2. Multiply by phase weight.
-3. Sum all weighted contributions.
-4. Round to nearest integer for dashboard display.
-
-## Current tracking fields
-
-- `phase_0_completion`
-- `phase_1_completion`
-- `phase_2_completion`
-- `phase_3_completion`
-- `phase_4_completion`
-- `phase_5_completion`
-- `overall_completion`
+1. Update each phase completion.
+2. Use `scripts/reports/update_progress.py`.
+3. Publish updated bars in this file and `docs/reproduction_report.md`.

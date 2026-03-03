@@ -1,0 +1,12 @@
+mixture_name: memory_caching_mixture_v0
+sources:
+  - name: fineweb_placeholder
+    uri: data/raw/fineweb_placeholder.jsonl
+    weight: 0.7
+  - name: ldc_placeholder
+    uri: data/raw/ldc_placeholder.jsonl
+    weight: 0.3
+local_overrides:
+  enabled: true
+  source_dir: data/local_overrides
+seed: 0

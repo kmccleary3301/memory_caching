@@ -4,9 +4,9 @@ import json
 
 import typer
 
-from .bench.adapters import DLAMCAdapter, LinearMCAdapter
+from .bench.adapters import DLAMCAdapter, LinearMCAdapter, TitansMCAdapter
 from .bench.artifacts import create_bundle, write_artifacts
-from .bench.runner import run_mqar_suite, run_niah_suite
+from .bench.runner import get_runner, list_runners, run_mqar_suite, run_niah_suite
 from .segmentation import constant_segments, logarithmic_segments, spans_from_lengths
 from .smoke import run_smoke_eval, run_smoke_train
 
@@ -21,21 +21,23 @@ def _select_adapters(which: str):
         return [LinearMCAdapter()]
     if normalized == "dla":
         return [DLAMCAdapter()]
+    if normalized == "titans":
+        return [TitansMCAdapter()]
     if normalized == "both":
         return [LinearMCAdapter(), DLAMCAdapter()]
-    raise typer.BadParameter("adapter must be one of: linear, dla, both")
+    if normalized == "all":
+        return [LinearMCAdapter(), DLAMCAdapter(), TitansMCAdapter()]
+    raise typer.BadParameter("adapter must be one of: linear, dla, titans, both, all")
 
 
 @app.command()
 def status() -> None:
-    """Print repository status."""
-    typer.echo("memory_caching: phase-1 mc core + dla + benchmark harness ready")
+    typer.echo("memory_caching: m70 execution in progress")
 
 
 @app.command("list-variants")
 def list_variants() -> None:
-    """Print available variants."""
-    typer.echo("backend: linear, dla")
+    typer.echo("backend: linear, dla, titans")
     typer.echo("aggregation: residual, grm, soup, ssc")
     typer.echo("segmentation: constant, logarithmic")
     typer.echo("state_init_mode: checkpoint, restart")
@@ -47,7 +49,6 @@ def segment(
     mode: str = typer.Option("constant", help="constant or logarithmic"),
     segment_size: int = typer.Option(256, help="Constant segment size"),
 ) -> None:
-    """Print segment boundaries for a sequence length."""
     if length <= 0:
         raise typer.BadParameter("length must be positive")
 
@@ -79,6 +80,13 @@ def smoke_train(
     dla_inner_update_mode: str = typer.Option("stopgrad"),
     dla_step_size: float = typer.Option(0.05),
     dla_momentum: float = typer.Option(0.0),
+    titans_memory_width: int = typer.Option(64),
+    titans_memory_depth: int = typer.Option(2),
+    titans_objective: str = typer.Option("l2"),
+    titans_inner_update_mode: str = typer.Option("stopgrad"),
+    titans_step_size: float = typer.Option(0.05),
+    titans_momentum: float = typer.Option(0.9),
+    titans_retention_alpha: float = typer.Option(1.0),
     segment_size: int = typer.Option(16),
     aggregation: str = typer.Option("grm"),
     segmentation: str = typer.Option("constant"),
@@ -89,7 +97,6 @@ def smoke_train(
     device: str = typer.Option("auto"),
     out_json: str | None = typer.Option(None),
 ) -> None:
-    """Run minimal synthetic MC training smoke loop and print JSON metrics."""
     metrics = run_smoke_train(
         steps=steps,
         batch_size=batch_size,
@@ -104,6 +111,13 @@ def smoke_train(
         dla_inner_update_mode=dla_inner_update_mode,
         dla_step_size=dla_step_size,
         dla_momentum=dla_momentum,
+        titans_memory_width=titans_memory_width,
+        titans_memory_depth=titans_memory_depth,
+        titans_objective=titans_objective,
+        titans_inner_update_mode=titans_inner_update_mode,
+        titans_step_size=titans_step_size,
+        titans_momentum=titans_momentum,
+        titans_retention_alpha=titans_retention_alpha,
         segment_size=segment_size,
         aggregation=aggregation,
         segmentation=segmentation,
@@ -132,6 +146,13 @@ def smoke_eval(
     dla_inner_update_mode: str = typer.Option("stopgrad"),
     dla_step_size: float = typer.Option(0.05),
     dla_momentum: float = typer.Option(0.0),
+    titans_memory_width: int = typer.Option(64),
+    titans_memory_depth: int = typer.Option(2),
+    titans_objective: str = typer.Option("l2"),
+    titans_inner_update_mode: str = typer.Option("stopgrad"),
+    titans_step_size: float = typer.Option(0.05),
+    titans_momentum: float = typer.Option(0.9),
+    titans_retention_alpha: float = typer.Option(1.0),
     segment_size: int = typer.Option(16),
     aggregation: str = typer.Option("grm"),
     segmentation: str = typer.Option("constant"),
@@ -142,7 +163,6 @@ def smoke_eval(
     device: str = typer.Option("auto"),
     out_json: str | None = typer.Option(None),
 ) -> None:
-    """Run minimal synthetic MC eval smoke loop and print JSON metrics."""
     metrics = run_smoke_eval(
         warmup_steps=warmup_steps,
         batch_size=batch_size,
@@ -157,6 +177,13 @@ def smoke_eval(
         dla_inner_update_mode=dla_inner_update_mode,
         dla_step_size=dla_step_size,
         dla_momentum=dla_momentum,
+        titans_memory_width=titans_memory_width,
+        titans_memory_depth=titans_memory_depth,
+        titans_objective=titans_objective,
+        titans_inner_update_mode=titans_inner_update_mode,
+        titans_step_size=titans_step_size,
+        titans_momentum=titans_momentum,
+        titans_retention_alpha=titans_retention_alpha,
         segment_size=segment_size,
         aggregation=aggregation,
         segmentation=segmentation,
@@ -170,13 +197,19 @@ def smoke_eval(
     typer.echo(json.dumps(metrics, sort_keys=True, indent=2))
 
 
+@bench_app.command("list")
+def bench_list() -> None:
+    typer.echo("runners: " + ", ".join(list_runners()))
+
+
 @bench_app.command("niah")
 def bench_niah(
-    adapter: str = typer.Option("both", help="linear, dla, or both"),
+    adapter: str = typer.Option("all", help="linear, dla, titans, both, or all"),
     tasks: str = typer.Option("s_niah_1,s_niah_2,s_niah_3"),
     context_lengths: str = typer.Option("4096,8192,16384"),
     samples_per_length: int = typer.Option(16),
     seed: int = typer.Option(0),
+    position_mode: str = typer.Option("uniform"),
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
@@ -189,6 +222,7 @@ def bench_niah(
         context_lengths=lengths,
         samples_per_length=samples_per_length,
         seed=seed,
+        position_mode=position_mode,
     )
 
     bundle = create_bundle(out_dir)
@@ -201,29 +235,53 @@ def bench_niah(
             "context_lengths": lengths,
             "samples_per_length": samples_per_length,
             "seed": seed,
+            "position_mode": position_mode,
         },
         metrics=result,
+        runner_version="v0.2",
+        dataset_revision="synthetic-v2",
     )
     typer.echo(json.dumps({**result, "artifact_dir": str(bundle.root_dir)}, indent=2))
 
 
 @bench_app.command("mqar")
 def bench_mqar(
-    adapter: str = typer.Option("both", help="linear, dla, or both"),
+    adapter: str = typer.Option("all", help="linear, dla, titans, both, or all"),
     samples: int = typer.Option(64),
     num_pairs: int = typer.Option(16),
     num_queries: int = typer.Option(4),
+    pair_grid: str | None = typer.Option(None, help="comma list, e.g. 8,16,32"),
+    query_grid: str | None = typer.Option(None, help="comma list, e.g. 1,4,8"),
     seed: int = typer.Option(0),
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
-    result = run_mqar_suite(
-        adapters=adapters,
-        samples=samples,
-        num_pairs=num_pairs,
-        num_queries=num_queries,
-        seed=seed,
-    )
+
+    pair_values = [num_pairs]
+    query_values = [num_queries]
+    if pair_grid:
+        pair_values = [int(x.strip()) for x in pair_grid.split(",") if x.strip()]
+    if query_grid:
+        query_values = [int(x.strip()) for x in query_grid.split(",") if x.strip()]
+
+    rows = []
+    for p in pair_values:
+        for q in query_values:
+            result = run_mqar_suite(
+                adapters=adapters,
+                samples=samples,
+                num_pairs=p,
+                num_queries=q,
+                seed=seed,
+            )
+            for row in result["rows"]:
+                rows.append(row)
+
+    result = {
+        "benchmark": "mqar",
+        "mean_accuracy": float(sum(r["micro_accuracy"] for r in rows) / len(rows)) if rows else 0.0,
+        "rows": rows,
+    }
 
     bundle = create_bundle(out_dir)
     write_artifacts(
@@ -232,11 +290,84 @@ def bench_mqar(
         config={
             "adapter": adapter,
             "samples": samples,
-            "num_pairs": num_pairs,
-            "num_queries": num_queries,
+            "pair_grid": pair_values,
+            "query_grid": query_values,
             "seed": seed,
         },
         metrics=result,
+        runner_version="v0.2",
+        dataset_revision="synthetic-v2",
+    )
+    typer.echo(json.dumps({**result, "artifact_dir": str(bundle.root_dir)}, indent=2))
+
+
+@bench_app.command("longbench")
+def bench_longbench(
+    adapter: str = typer.Option("all"),
+    tasks: str = typer.Option("single_doc_qa,multi_doc_qa,summarization,few_shot,code"),
+    samples_per_task: int = typer.Option(4),
+    seed: int = typer.Option(0),
+    out_dir: str | None = typer.Option(None),
+) -> None:
+    adapters = _select_adapters(adapter)
+    runner = get_runner("longbench")
+    result = runner(
+        adapters=adapters,
+        tasks=[t.strip() for t in tasks.split(",") if t.strip()],
+        samples_per_task=samples_per_task,
+        seed=seed,
+    )
+
+    bundle = create_bundle(out_dir)
+    write_artifacts(
+        bundle=bundle,
+        run_type="longbench",
+        config={
+            "adapter": adapter,
+            "tasks": tasks,
+            "samples_per_task": samples_per_task,
+            "seed": seed,
+        },
+        metrics=result,
+        runner_version="v0.2",
+        dataset_revision="scaffold-v1",
+    )
+    typer.echo(json.dumps({**result, "artifact_dir": str(bundle.root_dir)}, indent=2))
+
+
+@bench_app.command("retrieval")
+def bench_retrieval(
+    adapter: str = typer.Option("all"),
+    datasets: str = typer.Option("swde,squad,fda"),
+    truncation_lengths: str = typer.Option("512,1024,2048,16384"),
+    samples_per_dataset: int = typer.Option(4),
+    seed: int = typer.Option(0),
+    out_dir: str | None = typer.Option(None),
+) -> None:
+    adapters = _select_adapters(adapter)
+    runner = get_runner("retrieval")
+    result = runner(
+        adapters=adapters,
+        datasets=[d.strip() for d in datasets.split(",") if d.strip()],
+        truncation_lengths=[int(x.strip()) for x in truncation_lengths.split(",") if x.strip()],
+        samples_per_dataset=samples_per_dataset,
+        seed=seed,
+    )
+
+    bundle = create_bundle(out_dir)
+    write_artifacts(
+        bundle=bundle,
+        run_type="retrieval",
+        config={
+            "adapter": adapter,
+            "datasets": datasets,
+            "truncation_lengths": truncation_lengths,
+            "samples_per_dataset": samples_per_dataset,
+            "seed": seed,
+        },
+        metrics=result,
+        runner_version="v0.2",
+        dataset_revision="scaffold-v1",
     )
     typer.echo(json.dumps({**result, "artifact_dir": str(bundle.root_dir)}, indent=2))
 

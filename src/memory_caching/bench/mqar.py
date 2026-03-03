@@ -7,7 +7,7 @@ import random
 @dataclass(frozen=True)
 class MQARExample:
     prompt: str
-    answer: str
+    answers: tuple[str, ...]
 
 
 def _token(prefix: str, idx: int) -> str:
@@ -38,19 +38,23 @@ def generate_mqar_examples(
         rng.shuffle(pairs)
 
         chosen = rng.sample(pairs, k=min(num_queries, len(pairs)))
-        # single-answer contract for simple exact-match scoring
-        query_key, answer = chosen[0]
+        query_lines = "\n".join([f"QUERY: {k}" for k, _ in chosen])
+        answers = tuple(v for _, v in chosen)
 
         pair_lines = "\n".join([f"PAIR {k} -> {v}" for k, v in pairs])
         prompt = (
-            "Memorize all PAIR lines, then answer the QUERY value exactly.\n"
+            "Memorize all PAIR lines, then answer each QUERY value exactly.\n"
             f"{pair_lines}\n"
-            f"QUERY: {query_key}\n"
+            f"{query_lines}\n"
             "ANSWER:"
         )
-        out.append(MQARExample(prompt=prompt, answer=answer))
+        out.append(MQARExample(prompt=prompt, answers=answers))
     return out
 
 
-def score_mqar(prediction: str, answer: str) -> float:
-    return 1.0 if prediction.strip().upper() == answer.strip().upper() else 0.0
+def score_mqar(prediction: str, answers: tuple[str, ...]) -> tuple[float, float]:
+    pred = prediction.strip().upper()
+    flags = [1.0 if pred == ans.strip().upper() else 0.0 for ans in answers]
+    micro = float(sum(flags) / len(flags)) if flags else 0.0
+    macro = micro
+    return micro, macro

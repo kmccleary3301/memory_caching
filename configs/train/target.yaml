@@ -1,0 +1,7 @@
+name: target
+seq_len: 16384
+batch_size: 1
+steps: 10000
+save_every: 500
+eval_every: 500
+checkpoint_dir: artifacts/checkpoints/target

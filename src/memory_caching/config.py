@@ -6,9 +6,11 @@ from typing import Literal
 AggregationVariant = Literal["residual", "grm", "soup", "ssc"]
 SegmentationMode = Literal["constant", "logarithmic"]
 StateInitMode = Literal["checkpoint", "restart"]
-BackendKind = Literal["linear", "dla"]
+BackendKind = Literal["linear", "dla", "titans"]
 DLAObjective = Literal["dot", "l2"]
 DLAInnerUpdateMode = Literal["stopgrad", "differentiable"]
+TitansObjective = Literal["l2", "dot"]
+TitansInnerUpdateMode = Literal["stopgrad", "differentiable"]
 
 
 @dataclass(frozen=True)
@@ -32,11 +34,35 @@ class DLAConfig:
 
 
 @dataclass(frozen=True)
+class TitansConfig:
+    memory_width: int = 64
+    memory_depth: int = 2
+    objective: TitansObjective = "l2"
+    inner_update_mode: TitansInnerUpdateMode = "stopgrad"
+    step_size: float = 0.05
+    momentum: float = 0.9
+    retention_alpha: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.memory_width <= 0:
+            raise ValueError("memory_width must be positive")
+        if self.memory_depth < 2:
+            raise ValueError("memory_depth must be at least 2")
+        if self.step_size <= 0:
+            raise ValueError("step_size must be positive")
+        if not (0.0 <= self.momentum < 1.0):
+            raise ValueError("momentum must be in [0, 1)")
+        if not (0.0 < self.retention_alpha <= 1.0):
+            raise ValueError("retention_alpha must be in (0, 1]")
+
+
+@dataclass(frozen=True)
 class MCConfig:
     d_model: int
     num_heads: int
     backend: BackendKind = "linear"
     dla: DLAConfig = field(default_factory=DLAConfig)
+    titans: TitansConfig = field(default_factory=TitansConfig)
     aggregation: AggregationVariant = "grm"
     segmentation: SegmentationMode = "constant"
     segment_size: int = 256
@@ -60,3 +86,5 @@ class MCConfig:
             raise ValueError("ssc_top_k must be positive")
         if self.softmax_temperature <= 0:
             raise ValueError("softmax_temperature must be positive")
+        if self.backend not in {"linear", "dla", "titans"}:
+            raise ValueError("backend must be one of linear, dla, titans")

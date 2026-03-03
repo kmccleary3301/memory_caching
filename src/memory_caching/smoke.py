@@ -11,7 +11,8 @@ import torch.nn.functional as F
 
 from .backends.dla import DLABackend
 from .backends.linear import LinearMemoryBackend
-from .config import BackendKind, DLAConfig, MCConfig
+from .backends.titans import TitansBackend
+from .config import BackendKind, DLAConfig, MCConfig, TitansConfig
 from .layer import MemoryCachingLayer
 
 Aggregation = Literal["residual", "grm", "soup", "ssc"]
@@ -21,7 +22,7 @@ StateInit = Literal["checkpoint", "restart"]
 _VALID_AGGREGATIONS = {"residual", "grm", "soup", "ssc"}
 _VALID_SEGMENTATIONS = {"constant", "logarithmic"}
 _VALID_STATE_INIT = {"checkpoint", "restart"}
-_VALID_BACKENDS = {"linear", "dla"}
+_VALID_BACKENDS = {"linear", "dla", "titans"}
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,8 @@ def _build_backend(config: MCConfig):
         return LinearMemoryBackend()
     if config.backend == "dla":
         return DLABackend(config.dla)
+    if config.backend == "titans":
+        return TitansBackend(config.titans)
     raise ValueError(f"unsupported backend: {config.backend}")
 
 
@@ -151,6 +154,59 @@ def _write_metrics(metrics: dict[str, float | int | str], out_json: str | None) 
     path.write_text(json.dumps(metrics, sort_keys=True, indent=2) + "\n")
 
 
+def _build_config(
+    *,
+    d_model: int,
+    num_heads: int,
+    backend: str,
+    dla_memory_width: int,
+    dla_memory_depth: int,
+    dla_objective: str,
+    dla_inner_update_mode: str,
+    dla_step_size: float,
+    dla_momentum: float,
+    titans_memory_width: int,
+    titans_memory_depth: int,
+    titans_objective: str,
+    titans_inner_update_mode: str,
+    titans_step_size: float,
+    titans_momentum: float,
+    titans_retention_alpha: float,
+    aggregation: str,
+    segmentation: str,
+    segment_size: int,
+    state_init_mode: str,
+    ssc_top_k: int,
+) -> MCConfig:
+    return MCConfig(
+        d_model=d_model,
+        num_heads=num_heads,
+        backend=backend,
+        dla=DLAConfig(
+            memory_width=dla_memory_width,
+            memory_depth=dla_memory_depth,
+            objective=dla_objective,
+            inner_update_mode=dla_inner_update_mode,
+            step_size=dla_step_size,
+            momentum=dla_momentum,
+        ),
+        titans=TitansConfig(
+            memory_width=titans_memory_width,
+            memory_depth=titans_memory_depth,
+            objective=titans_objective,
+            inner_update_mode=titans_inner_update_mode,
+            step_size=titans_step_size,
+            momentum=titans_momentum,
+            retention_alpha=titans_retention_alpha,
+        ),
+        aggregation=aggregation,
+        segmentation=segmentation,
+        segment_size=segment_size,
+        state_init_mode=state_init_mode,
+        ssc_top_k=ssc_top_k,
+    )
+
+
 def run_smoke_train(
     *,
     steps: int = 20,
@@ -166,6 +222,13 @@ def run_smoke_train(
     dla_inner_update_mode: str = "stopgrad",
     dla_step_size: float = 0.05,
     dla_momentum: float = 0.0,
+    titans_memory_width: int = 64,
+    titans_memory_depth: int = 2,
+    titans_objective: str = "l2",
+    titans_inner_update_mode: str = "stopgrad",
+    titans_step_size: float = 0.05,
+    titans_momentum: float = 0.9,
+    titans_retention_alpha: float = 1.0,
     segment_size: int = 16,
     aggregation: str = "grm",
     segmentation: str = "constant",
@@ -193,18 +256,23 @@ def run_smoke_train(
     torch.manual_seed(seed)
     resolved_device = _resolve_device(device)
 
-    config = MCConfig(
+    config = _build_config(
         d_model=d_model,
         num_heads=num_heads,
         backend=backend_kind,
-        dla=DLAConfig(
-            memory_width=dla_memory_width,
-            memory_depth=dla_memory_depth,
-            objective=dla_objective,
-            inner_update_mode=dla_inner_update_mode,
-            step_size=dla_step_size,
-            momentum=dla_momentum,
-        ),
+        dla_memory_width=dla_memory_width,
+        dla_memory_depth=dla_memory_depth,
+        dla_objective=dla_objective,
+        dla_inner_update_mode=dla_inner_update_mode,
+        dla_step_size=dla_step_size,
+        dla_momentum=dla_momentum,
+        titans_memory_width=titans_memory_width,
+        titans_memory_depth=titans_memory_depth,
+        titans_objective=titans_objective,
+        titans_inner_update_mode=titans_inner_update_mode,
+        titans_step_size=titans_step_size,
+        titans_momentum=titans_momentum,
+        titans_retention_alpha=titans_retention_alpha,
         aggregation=agg,
         segmentation=seg,
         segment_size=segment_size,
@@ -285,6 +353,13 @@ def run_smoke_eval(
     dla_inner_update_mode: str = "stopgrad",
     dla_step_size: float = 0.05,
     dla_momentum: float = 0.0,
+    titans_memory_width: int = 64,
+    titans_memory_depth: int = 2,
+    titans_objective: str = "l2",
+    titans_inner_update_mode: str = "stopgrad",
+    titans_step_size: float = 0.05,
+    titans_momentum: float = 0.9,
+    titans_retention_alpha: float = 1.0,
     segment_size: int = 16,
     aggregation: str = "grm",
     segmentation: str = "constant",
@@ -312,18 +387,23 @@ def run_smoke_eval(
     torch.manual_seed(seed)
     resolved_device = _resolve_device(device)
 
-    config = MCConfig(
+    config = _build_config(
         d_model=d_model,
         num_heads=num_heads,
         backend=backend_kind,
-        dla=DLAConfig(
-            memory_width=dla_memory_width,
-            memory_depth=dla_memory_depth,
-            objective=dla_objective,
-            inner_update_mode=dla_inner_update_mode,
-            step_size=dla_step_size,
-            momentum=dla_momentum,
-        ),
+        dla_memory_width=dla_memory_width,
+        dla_memory_depth=dla_memory_depth,
+        dla_objective=dla_objective,
+        dla_inner_update_mode=dla_inner_update_mode,
+        dla_step_size=dla_step_size,
+        dla_momentum=dla_momentum,
+        titans_memory_width=titans_memory_width,
+        titans_memory_depth=titans_memory_depth,
+        titans_objective=titans_objective,
+        titans_inner_update_mode=titans_inner_update_mode,
+        titans_step_size=titans_step_size,
+        titans_momentum=titans_momentum,
+        titans_retention_alpha=titans_retention_alpha,
         aggregation=agg,
         segmentation=seg,
         segment_size=segment_size,

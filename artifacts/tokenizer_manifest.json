@@ -1,0 +1,5 @@
+{
+  "stage": "tokenizer_train",
+  "config": "configs/tokenizer/default.yaml",
+  "output": "artifacts/tokenizer/spm_32000.model"
+}

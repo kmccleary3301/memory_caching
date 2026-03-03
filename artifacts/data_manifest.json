@@ -1,0 +1,6 @@
+{
+  "stage": "data_process",
+  "config": "configs/data/mixture.yaml",
+  "tokenizer": "artifacts/tokenizer/spm_32000.model",
+  "output_dir": "data/processed"
+}

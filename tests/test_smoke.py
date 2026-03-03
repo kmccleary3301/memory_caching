@@ -75,3 +75,37 @@ def test_smoke_dla_path_runs() -> None:
         dla_inner_update_mode="stopgrad",
     )
     assert metrics["backend"] == "dla"
+
+
+def test_smoke_titans_path_runs_and_schema_parity() -> None:
+    metrics = run_smoke_eval(
+        warmup_steps=1,
+        batch_size=1,
+        seq_len=8,
+        vocab_size=16,
+        d_model=8,
+        num_heads=2,
+        backend="titans",
+        titans_memory_width=8,
+        titans_memory_depth=2,
+        titans_objective="l2",
+        titans_inner_update_mode="stopgrad",
+    )
+    expected_keys = {
+        "mode",
+        "device",
+        "backend",
+        "steps",
+        "batch_size",
+        "seq_len",
+        "vocab_size",
+        "initial_loss",
+        "final_loss",
+        "eval_loss",
+        "eval_accuracy",
+        "cache_segments",
+        "mean_segment_len",
+        "trainable_params",
+    }
+    assert expected_keys.issubset(metrics.keys())
+    assert metrics["backend"] == "titans"

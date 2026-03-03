@@ -1,0 +1,7 @@
+name: pilot
+seq_len: 4096
+batch_size: 4
+steps: 1000
+save_every: 100
+eval_every: 100
+checkpoint_dir: artifacts/checkpoints/pilot

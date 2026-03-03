@@ -1,0 +1,23 @@
+name: repro-checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  repro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Sync dev env
+        run: uv sync --extra dev
+      - name: Unit tests
+        run: uv run python -m pytest -q
+      - name: Phase2 checks
+        run: ./scripts/checks/phase2.sh
+      - name: Bench smoke
+        run: ./scripts/checks/bench_smoke.sh
+      - name: Evidence validation
+        run: uv run python scripts/reports/validate_evidence_bundle.py --root outputs/benchmarks

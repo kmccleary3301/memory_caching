@@ -1,0 +1,6 @@
+{
+  "stage": "train",
+  "config": "configs/train/pilot.yaml",
+  "data_dir": "data/processed",
+  "checkpoint_dir": "artifacts/checkpoints/pilot"
+}

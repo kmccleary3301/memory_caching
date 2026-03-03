@@ -19,12 +19,28 @@ def _distractor_block(rng: random.Random, length: int) -> str:
     return " ".join(words)
 
 
+def _split_by_mode(context_length: int, mode: str, rng: random.Random) -> tuple[int, int]:
+    if mode == "front":
+        left = context_length // 8
+    elif mode == "back":
+        left = context_length - (context_length // 8)
+    elif mode == "middle":
+        left = context_length // 2
+    elif mode == "uniform":
+        left = rng.randint(0, context_length)
+    else:
+        raise ValueError("position_mode must be one of: uniform, front, middle, back")
+    right = max(context_length - left, 0)
+    return left, right
+
+
 def generate_niah_examples(
     *,
     task: str,
     context_length: int,
     samples: int,
     seed: int,
+    position_mode: str = "uniform",
 ) -> list[NIAHExample]:
     if task not in {"s_niah_1", "s_niah_2", "s_niah_3"}:
         raise ValueError(f"unsupported niah task: {task}")
@@ -37,8 +53,9 @@ def generate_niah_examples(
     examples: list[NIAHExample] = []
 
     for _ in range(samples):
-        left = _distractor_block(rng, context_length // 2)
-        right = _distractor_block(rng, context_length // 2)
+        left_len, right_len = _split_by_mode(context_length, position_mode, rng)
+        left = _distractor_block(rng, left_len)
+        right = _distractor_block(rng, right_len)
 
         if task == "s_niah_1":
             answer = f"P{rng.randint(100000, 999999)}"
@@ -71,5 +88,9 @@ def generate_niah_examples(
     return examples
 
 
+def normalize_answer(text: str) -> str:
+    return " ".join(text.strip().split()).lower()
+
+
 def score_niah(prediction: str, answer: str) -> float:
-    return 1.0 if prediction.strip().lower() == answer.strip().lower() else 0.0
+    return 1.0 if normalize_answer(prediction) == normalize_answer(answer) else 0.0

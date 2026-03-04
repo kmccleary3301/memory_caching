@@ -9,6 +9,7 @@ __pycache__/
 outputs/
 artifacts/
 data/processed/
+data/external/
 
 # Model checkpoints / weights (never commit)
 *.pt

@@ -15,10 +15,10 @@ Date: 2026-03-03
 
 - phase_0_completion: 100%
 - phase_1_completion: 100%
-- phase_2_completion: 94%
-- phase_3_completion: 87%
-- phase_4_completion: 75%
-- phase_5_completion: 72%
+- phase_2_completion: 100%
+- phase_3_completion: 96%
+- phase_4_completion: 91%
+- phase_5_completion: 97%
 
 ## Weighted computation
 
@@ -26,12 +26,12 @@ Overall =
 
 - 0.10 * 1.00
 - 0.25 * 1.00
-- 0.25 * 0.94
-- 0.20 * 0.87
-- 0.15 * 0.75
-- 0.05 * 0.72
+- 0.25 * 1.00
+- 0.20 * 0.96
+- 0.15 * 0.91
+- 0.05 * 0.97
 
-Total: **90.75%**
+Total: **97.70%**
 
 ## Update rule
 

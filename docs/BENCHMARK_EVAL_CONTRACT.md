@@ -29,6 +29,13 @@ Each run must produce:
 - `report.md`
 - `manifest.json`
 
+Additional reporting artifacts required for phase gate:
+
+- `phase3_benchmark_trend.json`
+- `phase3_parity_dashboard.json`
+- `phase3_stat_summary.json`
+- `phase3_artifact_checksums.json`
+
 ## Manifest v1 required fields
 
 - schema_version

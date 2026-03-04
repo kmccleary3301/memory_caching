@@ -2,14 +2,23 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Callable, Mapping
 
 
 @dataclass(frozen=True)
 class BenchmarkAdapter:
     name: str
+    predictor: Callable[[str], str]
 
     def predict(self, prompt: str) -> str:
-        raise NotImplementedError
+        return self.predictor(prompt)
+
+
+@dataclass(frozen=True)
+class ModelBackedAdapter(BenchmarkAdapter):
+    backend_kind: str
+    checkpoint_path: str | None = None
+    metadata: Mapping[str, str] | None = None
 
 
 _PASSKEY_RE = re.compile(r"PASSKEY\s*:\s*([A-Za-z0-9\-]+)")
@@ -41,23 +50,40 @@ def _predict_generic(prompt: str) -> str:
 
 class LinearMCAdapter(BenchmarkAdapter):
     def __init__(self) -> None:
-        super().__init__(name="linear-mc")
-
-    def predict(self, prompt: str) -> str:
-        return _predict_generic(prompt)
+        super().__init__(
+            name="linear-mc",
+            predictor=_predict_generic,
+        )
 
 
 class DLAMCAdapter(BenchmarkAdapter):
     def __init__(self) -> None:
-        super().__init__(name="dla-mc")
-
-    def predict(self, prompt: str) -> str:
-        return _predict_generic(prompt)
+        super().__init__(
+            name="dla-mc",
+            predictor=_predict_generic,
+        )
 
 
 class TitansMCAdapter(BenchmarkAdapter):
     def __init__(self) -> None:
-        super().__init__(name="titans-mc")
+        super().__init__(
+            name="titans-mc",
+            predictor=_predict_generic,
+        )
 
-    def predict(self, prompt: str) -> str:
-        return _predict_generic(prompt)
+
+def make_model_backed_adapter(
+    *,
+    name: str,
+    backend_kind: str,
+    predictor: Callable[[str], str],
+    checkpoint_path: str | None = None,
+    metadata: Mapping[str, str] | None = None,
+) -> ModelBackedAdapter:
+    return ModelBackedAdapter(
+        name=name,
+        predictor=predictor,
+        backend_kind=backend_kind,
+        checkpoint_path=checkpoint_path,
+        metadata=metadata,
+    )

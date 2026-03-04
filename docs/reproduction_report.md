@@ -21,6 +21,9 @@ This repository provides mechanism-level implementation evidence for core Memory
 - Release-gate checker enforces required evidence files before parity claims.
 - Tokenizer/data/training scripts now execute deterministic non-placeholder flows with explicit manifests.
 - Training writes real `torch.save` checkpoints and supports resume-path parity checks.
+- Benchmark reporting now includes parity dashboard, statistical summary, and checksum archival artifacts.
+- Training parity table artifact is generated and gate-enforced.
+- Independent clean-environment reproduction pass is implemented, archived, and gate-checked.
 
 ## Unsupported claims
 
@@ -37,11 +40,11 @@ This repository provides mechanism-level implementation evidence for core Memory
 
 - Phase 0: 100%
 - Phase 1: 100%
-- Phase 2: 94%
-- Phase 3: 87%
-- Phase 4: 75%
-- Phase 5: 72%
-- Overall weighted progress: **90.75%**
+- Phase 2: 100%
+- Phase 3: 96%
+- Phase 4: 91%
+- Phase 5: 97%
+- Overall weighted progress: **97.70%**
 
 ## Next milestones
 

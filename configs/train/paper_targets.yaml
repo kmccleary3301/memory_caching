@@ -1,0 +1,15 @@
+schema_version: v1
+paper_reference: arxiv_2602_24281v1
+profiles:
+  pilot:
+    target_seq_len: 4096
+    target_batch_size: 4
+    target_steps: 1000
+  mid:
+    target_seq_len: 8192
+    target_batch_size: 2
+    target_steps: 5000
+  target:
+    target_seq_len: 16384
+    target_batch_size: 1
+    target_steps: 10000

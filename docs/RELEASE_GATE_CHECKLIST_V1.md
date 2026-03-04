@@ -7,6 +7,7 @@
 - [ ] `./scripts/checks/bench_smoke.sh`
 - [ ] `./scripts/checks/pipeline_smoke.sh`
 - [ ] `./scripts/checks/resume_consistency.sh`
+- [ ] `./scripts/checks/independent_repro_pass.sh`
 - [ ] `uv run python scripts/reports/validate_evidence_bundle.py --root outputs/benchmarks/phase3_smoke`
 - [ ] `uv run python scripts/reports/quarantine_legacy_artifacts.py --root outputs/benchmarks/phase3_smoke --report outputs/reports/quarantine_scan.json`
 - [ ] `uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_gate_v1.json`
@@ -22,6 +23,13 @@
 - [ ] `outputs/checks/resume_consistency.json`
 - [ ] `outputs/reports/phase3_benchmark_trend.json`
 - [ ] `outputs/reports/phase3_benchmark_trend.md`
+- [ ] `outputs/reports/phase3_parity_dashboard.json`
+- [ ] `outputs/reports/phase3_parity_dashboard.md`
+- [ ] `outputs/reports/phase3_stat_summary.json`
+- [ ] `outputs/reports/phase3_stat_summary.md`
+- [ ] `outputs/reports/phase3_artifact_checksums.json`
+- [ ] `outputs/reports/training_parity_table.json`
+- [ ] `outputs/independent_repro/<stamp>/manifest.json`
 - [ ] `outputs/reports/release_gate_v1.json`
 - [ ] `outputs/reports/quarantine_scan.json`
 

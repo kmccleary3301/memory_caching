@@ -14,3 +14,7 @@
   - `uv run mc bench retrieval --adapter all --datasets swde,squad --truncation-lengths 64 --samples-per-dataset 2 --seed 0 --dataset-file examples/retrieval_subset.jsonl`
 - Sweep orchestration (timeout/retry/resume):
   - `uv run python scripts/bench/run_benchmark_sweep.py --root outputs/benchmarks/sweeps/default --retries 1 --timeout-sec 1800`
+- Phase3 parity dashboard generation:
+  - `uv run python scripts/reports/parity_dashboard.py --trend-json outputs/reports/phase3_benchmark_trend.json --targets-yaml configs/bench/paper_targets.yaml --out-md outputs/reports/phase3_parity_dashboard.md --out-json outputs/reports/phase3_parity_dashboard.json`
+- Phase3 statistical summary generation:
+  - `uv run python scripts/reports/stat_summary.py --root outputs/benchmarks/phase3_smoke --out-json outputs/reports/phase3_stat_summary.json --out-md outputs/reports/phase3_stat_summary.md`

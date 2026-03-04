@@ -1,4 +1,11 @@
-from .adapters import BenchmarkAdapter, DLAMCAdapter, LinearMCAdapter, TitansMCAdapter
+from .adapters import (
+    BenchmarkAdapter,
+    DLAMCAdapter,
+    LinearMCAdapter,
+    ModelBackedAdapter,
+    TitansMCAdapter,
+    make_model_backed_adapter,
+)
 from .artifacts import ArtifactBundle, create_bundle, write_artifacts
 from .config import BenchmarkConfig
 from .longbench import LONG_BENCH_TASK_GROUPS, load_longbench_examples
@@ -16,6 +23,8 @@ from .runner import (
 
 __all__ = [
     "BenchmarkAdapter",
+    "ModelBackedAdapter",
+    "make_model_backed_adapter",
     "LinearMCAdapter",
     "DLAMCAdapter",
     "TitansMCAdapter",

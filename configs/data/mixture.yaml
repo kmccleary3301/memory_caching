@@ -3,6 +3,12 @@ text_field: text
 target_records: 512
 max_records_per_source: 512
 shard_size: 128
+split_train_ratio: 0.95
+split_val_ratio: 0.04
+split_test_ratio: 0.01
+clean_rules_version: v1
+clean_min_chars: 16
+clean_lowercase: false
 sources:
   - name: fineweb_placeholder
     uri: data/raw/fineweb_placeholder.jsonl

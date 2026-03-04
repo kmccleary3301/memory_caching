@@ -11,6 +11,10 @@ Each checkpoint save event should include metadata fields:
 - git_commit
 - timestamp_utc
 - loss_tail
+- step_metrics_tail
+- scheduler_state
+- optim_config
+- rng_state_torch
 - batch_size
 - seed
 

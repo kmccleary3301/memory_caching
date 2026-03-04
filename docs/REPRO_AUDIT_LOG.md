@@ -29,3 +29,19 @@
 - Added resume consistency tooling (`scripts/checks/resume_consistency.sh`, `scripts/reports/checkpoint_parity.py`).
 - Added committed raw placeholder corpora under `data/raw/` to reduce synthetic fallback reliance.
 - Updated contracts/docs/progress to reflect a 90.75% weighted completion snapshot.
+
+## 2026-03-04 parity/statistics hardening checkpoint
+
+- Added benchmark paper-target config at `configs/bench/paper_targets.yaml`.
+- Replaced parity dashboard with target-vs-actual delta/status reporting.
+- Added statistical summary report generation with mean/std/CI95.
+- Added artifact checksum archival report generation.
+- Wired parity/statistics/checksum outputs into `bench_smoke` and release gate enforcement.
+- Upgraded data processing with deterministic split assignment and split-aware shard outputs.
+- Rewrote training loop to include optimizer schedule handling, gradient accumulation, telemetry metrics, and scheduler/RNG checkpoint metadata.
+- Added training parity table artifact generation and release-gate requirement.
+- Added independent clean-environment repro pass script and archived evidence bundle.
+- Updated progress snapshot to 96.25%.
+- Added phase-2 parity/guard mode tests and validated `phase2.sh` at 69 passing tests.
+- Added explicit model-backed adapter interface and revalidated full bench smoke artifacts.
+- Updated progress snapshot to 97.70%.

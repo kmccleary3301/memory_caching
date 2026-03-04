@@ -29,6 +29,10 @@ def main() -> None:
         root / "outputs/checks/phase4_summary.json",
         root / "outputs/checks/resume_consistency.json",
         root / "outputs/reports/phase3_benchmark_trend.json",
+        root / "outputs/reports/phase3_parity_dashboard.json",
+        root / "outputs/reports/phase3_stat_summary.json",
+        root / "outputs/reports/phase3_artifact_checksums.json",
+        root / "outputs/reports/training_parity_table.json",
         root / "docs/CLAIM_TO_EVIDENCE_MATRIX.md",
         root / "docs/reproduction_report.md",
         root / "docs/PROGRESS_LEDGER.md",
@@ -42,6 +46,19 @@ def main() -> None:
         checks.append({"name": f"exists:{path}", "ok": ok})
         if not ok:
             errors.append(f"missing required file: {path}")
+
+    independent_manifests = sorted(
+        (root / "outputs/independent_repro").glob("*/manifest.json")
+    )
+    independent_ok = len(independent_manifests) > 0
+    checks.append(
+        {
+            "name": "exists_any:outputs/independent_repro/*/manifest.json",
+            "ok": independent_ok,
+        }
+    )
+    if not independent_ok:
+        errors.append("missing independent repro manifest under outputs/independent_repro/")
 
     phase_summaries = {}
     for phase in ("phase2", "phase3", "phase4"):
@@ -72,6 +89,40 @@ def main() -> None:
                 errors.append(
                     f"{trend_path}: missing benchmark run types in trend report: {missing_runs}"
                 )
+
+    parity_path = root / "outputs/reports/phase3_parity_dashboard.json"
+    if parity_path.exists():
+        parity = _load_json(parity_path)
+        rows = parity.get("rows", [])
+        if not isinstance(rows, list) or len(rows) == 0:
+            errors.append(f"{parity_path}: rows must be a non-empty list")
+        else:
+            below = [
+                row for row in rows
+                if isinstance(row, dict) and str(row.get("status", "")) == "below_target"
+            ]
+            if below:
+                errors.append(f"{parity_path}: contains below_target rows")
+
+    stats_path = root / "outputs/reports/phase3_stat_summary.json"
+    if stats_path.exists():
+        stats = _load_json(stats_path)
+        rows = stats.get("rows", [])
+        if not isinstance(rows, list) or len(rows) == 0:
+            errors.append(f"{stats_path}: rows must be a non-empty list")
+
+    checksum_path = root / "outputs/reports/phase3_artifact_checksums.json"
+    if checksum_path.exists():
+        checksum = _load_json(checksum_path)
+        if int(checksum.get("file_count", 0)) <= 0:
+            errors.append(f"{checksum_path}: file_count must be positive")
+
+    training_parity_path = root / "outputs/reports/training_parity_table.json"
+    if training_parity_path.exists():
+        training_parity = _load_json(training_parity_path)
+        rows = training_parity.get("rows", [])
+        if not isinstance(rows, list) or len(rows) == 0:
+            errors.append(f"{training_parity_path}: rows must be a non-empty list")
 
     out_payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),

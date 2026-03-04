@@ -13,4 +13,7 @@ uv run mc bench retrieval --adapter all --datasets swde,squad --truncation-lengt
 
 uv run python scripts/reports/validate_evidence_bundle.py --root "${BENCH_ROOT}"
 uv run python scripts/reports/benchmark_trend.py --root "${BENCH_ROOT}" --out-json outputs/reports/phase3_benchmark_trend.json --out-md outputs/reports/phase3_benchmark_trend.md
-uv run python scripts/reports/write_phase_summary.py --phase phase3 --out outputs/checks/phase3_summary.json --input outputs/reports/phase3_benchmark_trend.json
+uv run python scripts/reports/parity_dashboard.py --trend-json outputs/reports/phase3_benchmark_trend.json --targets-yaml configs/bench/paper_targets.yaml --out-md outputs/reports/phase3_parity_dashboard.md --out-json outputs/reports/phase3_parity_dashboard.json
+uv run python scripts/reports/stat_summary.py --root "${BENCH_ROOT}" --out-json outputs/reports/phase3_stat_summary.json --out-md outputs/reports/phase3_stat_summary.md
+uv run python scripts/reports/artifact_checksums.py --path "${BENCH_ROOT}" --path outputs/reports/phase3_benchmark_trend.json --path outputs/reports/phase3_parity_dashboard.json --path outputs/reports/phase3_stat_summary.json --out outputs/reports/phase3_artifact_checksums.json
+uv run python scripts/reports/write_phase_summary.py --phase phase3 --out outputs/checks/phase3_summary.json --input outputs/reports/phase3_benchmark_trend.json --input outputs/reports/phase3_parity_dashboard.json --input outputs/reports/phase3_stat_summary.json --input outputs/reports/phase3_artifact_checksums.json

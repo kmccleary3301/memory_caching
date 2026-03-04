@@ -7,6 +7,7 @@
   - uri/path
   - version or revision marker
   - weight in mixture
+  - split policy ratios (`train/val/test`)
 
 ## Processing manifest requirements
 
@@ -32,6 +33,13 @@ Each record contains:
 
 - `record_id` (int)
 - `source` (string)
+- `split` (`train|val|test`)
 - `text` (string)
 - `token_ids` (list[int])
 - `token_count` (int)
+
+Split output files:
+
+- training shards: `shard_*.jsonl`
+- validation shards: `val_shard_*.jsonl`
+- test shards: `test_shard_*.jsonl`

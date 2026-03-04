@@ -14,6 +14,13 @@
   - GRM
   - Soup
   - SSC
+- Backend contract negative tests:
+  - invalid shape/dtype/device guard assertions
+  - null-state backend failure assertions
+  - per-backend deterministic smoke reproducibility assertions
+  - checkpoint/restart divergence tests across all aggregators
+  - soup fallback equivalence tests for non-mixable backends
+  - DLA/Titans update-mode graph-property divergence tests
 - State init modes:
   - checkpoint
   - restart
@@ -29,16 +36,20 @@
   - deterministic MQAR generators + micro/macro scoring
   - LongBench scaffold runner
   - retrieval scaffold runner
+  - explicit model-backed adapter interface (current default predictor is rule-based compatibility)
   - artifact bundle writer (`metrics.json`, `rows.jsonl`, `summary.csv`, `report.md`, `manifest.json`)
 - Benchmark execution hardening:
   - benchmark sweep script with timeout/retry/resume markers
   - benchmark trend report generator (`json` + `md`)
+  - parity dashboard report (`json` + `md`) against configured paper targets
+  - statistical summary report (`json` + `md`) with CI estimates
+  - artifact checksum archival report
   - stricter evidence manifest validator
   - optional JSONL dataset-file ingestion for longbench/retrieval + sample files
 - Bootstrap pipeline scaffolds:
   - tokenizer config + deterministic vocabulary trainer (JSON model + vocab file + corpus fingerprint)
-  - data mixture config + deterministic weighted sampling + tokenized shard writer
-  - train profile configs + actual tiny-LM train loop (`torch.save` checkpoints + resume support)
+  - data mixture config + deterministic weighted sampling + split-aware tokenized shard writer (`train/val/test`)
+  - train profile configs + actual tiny-LM train loop (`torch.save` checkpoints + resume support + scheduler + telemetry)
   - periodic eval hook reads checkpoint loss tails and emits proxy score
   - resume consistency parity checker (`resume` vs `full` checkpoint tensor diff)
 - Phase summary artifacts:
@@ -48,6 +59,7 @@
 - Evidence and governance scaffolds:
   - release gate v1
   - release gate checker script
+  - independent clean-environment repro pass script + archived manifests
   - claim boundary
   - claim-to-evidence matrix with blocked claims
   - progress updater and evidence validators

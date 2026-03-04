@@ -19,6 +19,7 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 - Included sample dataset files: `examples/longbench_subset.jsonl`, `examples/retrieval_subset.jsonl`.
 - Deterministic tokenizer/data/train/eval pipeline with real checkpoint artifacts.
 - Artifact bundles: metrics + rows + csv + report + manifest.
+- Phase3 reports include trend, parity dashboard, statistical summary, and artifact checksums.
 
 ## Quickstart
 
@@ -43,6 +44,7 @@ uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_g
 - `docs/BENCHMARK_COMMAND_MATRIX.md`
 - `docs/BENCHMARK_SWEEP_RUNBOOK.md`
 - `docs/BENCHMARK_EVAL_CONTRACT.md`
+- `docs/TRAINING_PARITY_TABLE.md`
 - `docs/TRAINING_BOOTSTRAP.md`
 - `docs/PROGRESS_LEDGER.md`
 

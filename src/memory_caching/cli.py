@@ -307,6 +307,10 @@ def bench_longbench(
     tasks: str = typer.Option("single_doc_qa,multi_doc_qa,summarization,few_shot,code"),
     samples_per_task: int = typer.Option(4),
     seed: int = typer.Option(0),
+    dataset_file: str | None = typer.Option(
+        None,
+        help="optional JSONL dataset file with task_group/prompt/answer fields",
+    ),
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
@@ -316,6 +320,7 @@ def bench_longbench(
         tasks=[t.strip() for t in tasks.split(",") if t.strip()],
         samples_per_task=samples_per_task,
         seed=seed,
+        dataset_file=dataset_file,
     )
 
     bundle = create_bundle(out_dir)
@@ -327,10 +332,11 @@ def bench_longbench(
             "tasks": tasks,
             "samples_per_task": samples_per_task,
             "seed": seed,
+            "dataset_file": dataset_file,
         },
         metrics=result,
         runner_version="v0.2",
-        dataset_revision="scaffold-v1",
+        dataset_revision="dataset-file-v1" if dataset_file else "scaffold-v1",
     )
     typer.echo(json.dumps({**result, "artifact_dir": str(bundle.root_dir)}, indent=2))
 
@@ -342,6 +348,10 @@ def bench_retrieval(
     truncation_lengths: str = typer.Option("512,1024,2048,16384"),
     samples_per_dataset: int = typer.Option(4),
     seed: int = typer.Option(0),
+    dataset_file: str | None = typer.Option(
+        None,
+        help="optional JSONL dataset file with dataset/document/question/answer fields",
+    ),
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
@@ -352,6 +362,7 @@ def bench_retrieval(
         truncation_lengths=[int(x.strip()) for x in truncation_lengths.split(",") if x.strip()],
         samples_per_dataset=samples_per_dataset,
         seed=seed,
+        dataset_file=dataset_file,
     )
 
     bundle = create_bundle(out_dir)
@@ -364,10 +375,11 @@ def bench_retrieval(
             "truncation_lengths": truncation_lengths,
             "samples_per_dataset": samples_per_dataset,
             "seed": seed,
+            "dataset_file": dataset_file,
         },
         metrics=result,
         runner_version="v0.2",
-        dataset_revision="scaffold-v1",
+        dataset_revision="dataset-file-v1" if dataset_file else "scaffold-v1",
     )
     typer.echo(json.dumps({**result, "artifact_dir": str(bundle.root_dir)}, indent=2))
 

@@ -4,10 +4,14 @@ from dataclasses import asdict, dataclass
 from typing import Any, Callable, Sequence
 
 from .adapters import BenchmarkAdapter
-from .longbench import LONG_BENCH_TASK_GROUPS, build_longbench_prompt, score_longbench
+from .longbench import LONG_BENCH_TASK_GROUPS, load_longbench_examples, score_longbench
 from .mqar import generate_mqar_examples, score_mqar
 from .niah import generate_niah_examples, score_niah
-from .retrieval import SUPPORTED_RETRIEVAL_DATASETS, build_retrieval_prompt, score_retrieval
+from .retrieval import (
+    SUPPORTED_RETRIEVAL_DATASETS,
+    load_retrieval_examples,
+    score_retrieval,
+)
 from .seed import make_seed
 
 
@@ -118,6 +122,7 @@ def run_longbench_suite(
     tasks: Sequence[str],
     samples_per_task: int,
     seed: int,
+    dataset_file: str | None = None,
 ) -> dict[str, object]:
     for task in tasks:
         if task not in LONG_BENCH_TASK_GROUPS:
@@ -126,18 +131,22 @@ def run_longbench_suite(
     rows: list[dict[str, object]] = []
     for adapter in adapters:
         for task in tasks:
+            examples = load_longbench_examples(
+                task_group=task,
+                samples=samples_per_task,
+                seed=make_seed(seed, adapter.name, task),
+                dataset_file=dataset_file,
+            )
             scores: list[float] = []
-            for idx in range(samples_per_task):
-                _ = make_seed(seed, adapter.name, task, idx)
-                prompt = build_longbench_prompt(task, idx)
-                pred = adapter.predict(prompt)
-                scores.append(score_longbench(pred, "ANSWER_OK"))
+            for ex in examples:
+                pred = adapter.predict(ex.prompt)
+                scores.append(score_longbench(pred, ex.answer))
 
             rows.append(
                 {
                     "adapter": adapter.name,
                     "task": task,
-                    "samples": samples_per_task,
+                    "samples": len(examples),
                     "accuracy": float(sum(scores) / len(scores)) if scores else 0.0,
                 }
             )
@@ -157,6 +166,7 @@ def run_retrieval_suite(
     truncation_lengths: Sequence[int],
     samples_per_dataset: int,
     seed: int,
+    dataset_file: str | None = None,
 ) -> dict[str, object]:
     if any(length <= 0 for length in truncation_lengths):
         raise ValueError("all truncation lengths must be positive")
@@ -169,19 +179,24 @@ def run_retrieval_suite(
     for adapter in adapters:
         for ds in datasets:
             for tlen in truncation_lengths:
+                examples = load_retrieval_examples(
+                    dataset=ds,
+                    truncation_length=tlen,
+                    samples=samples_per_dataset,
+                    seed=make_seed(seed, adapter.name, ds, tlen),
+                    dataset_file=dataset_file,
+                )
                 scores: list[float] = []
-                for idx in range(samples_per_dataset):
-                    _ = make_seed(seed, adapter.name, ds, tlen, idx)
-                    prompt = build_retrieval_prompt(ds, tlen, idx)
-                    pred = adapter.predict(prompt)
-                    scores.append(score_retrieval(pred, "RETRIEVAL_OK"))
+                for ex in examples:
+                    pred = adapter.predict(ex.prompt)
+                    scores.append(score_retrieval(pred, ex.answer))
 
                 rows.append(
                     {
                         "adapter": adapter.name,
                         "dataset": ds,
                         "truncation_length": tlen,
-                        "samples": samples_per_dataset,
+                        "samples": len(examples),
                         "accuracy": float(sum(scores) / len(scores)) if scores else 0.0,
                     }
                 )

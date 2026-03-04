@@ -1,0 +1,4 @@
+{"text":"Memory caching enables efficient long-context modeling by growing recurrent memory over segments."}
+{"text":"Segmented processing preserves causality while reducing quadratic attention overhead."}
+{"text":"Benchmark protocols include passkey retrieval and multi-query associative recall tasks."}
+{"text":"Deterministic seeds and explicit artifact manifests are required for reproducible experiments."}

@@ -1,0 +1,4 @@
+{"task_group":"single_doc_qa","prompt":"TASK_GROUP: single_doc_qa\nDOC: example 1\nQUESTION: return token ANSWER_OK\nANSWER:","answer":"ANSWER_OK"}
+{"task_group":"single_doc_qa","prompt":"TASK_GROUP: single_doc_qa\nDOC: example 2\nQUESTION: return token ANSWER_OK\nANSWER:","answer":"ANSWER_OK"}
+{"task_group":"code","prompt":"TASK_GROUP: code\nDOC: example 3\nQUESTION: return token ANSWER_OK\nANSWER:","answer":"ANSWER_OK"}
+{"task_group":"code","prompt":"TASK_GROUP: code\nDOC: example 4\nQUESTION: return token ANSWER_OK\nANSWER:","answer":"ANSWER_OK"}

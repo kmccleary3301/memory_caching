@@ -12,6 +12,13 @@
 - LongBench scaffold: task-group accuracy.
 - Retrieval scaffold: dataset x truncation accuracy.
 
+## Dataset-backed mode (LongBench/Retrieval)
+
+- LongBench accepts `--dataset-file` (JSONL with `task_group`, `prompt`, `answer` or `answers`).
+- Retrieval accepts `--dataset-file` (JSONL with `dataset`, `document|context`, `question`, `answer|answers`).
+- If `--dataset-file` is provided, rows are sampled deterministically by seed.
+- If `--dataset-file` is omitted, synthetic scaffold prompts are used.
+
 ## Artifact requirements
 
 Each run must produce:

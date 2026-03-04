@@ -1,4 +1,8 @@
 mixture_name: memory_caching_mixture_v0
+text_field: text
+target_records: 512
+max_records_per_source: 512
+shard_size: 128
 sources:
   - name: fineweb_placeholder
     uri: data/raw/fineweb_placeholder.jsonl

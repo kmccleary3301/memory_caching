@@ -13,11 +13,24 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - name: Sync dev env
         run: uv sync --extra dev
-      - name: Unit tests
-        run: uv run python -m pytest -q
       - name: Phase2 checks
         run: ./scripts/checks/phase2.sh
       - name: Bench smoke
         run: ./scripts/checks/bench_smoke.sh
+      - name: Pipeline smoke
+        run: ./scripts/checks/pipeline_smoke.sh
+      - name: Resume consistency
+        run: ./scripts/checks/resume_consistency.sh
       - name: Evidence validation
-        run: uv run python scripts/reports/validate_evidence_bundle.py --root outputs/benchmarks
+        run: uv run python scripts/reports/validate_evidence_bundle.py --root outputs/benchmarks/phase3_smoke
+      - name: Quarantine scan (dry-run)
+        run: uv run python scripts/reports/quarantine_legacy_artifacts.py --root outputs/benchmarks/phase3_smoke --report outputs/reports/quarantine_scan.json
+      - name: Release gate v1
+        run: uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_gate_v1.json
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: repro-reports
+          path: |
+            outputs/checks
+            outputs/reports

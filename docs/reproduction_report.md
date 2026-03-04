@@ -15,7 +15,12 @@ This repository provides mechanism-level implementation evidence for core Memory
 - Smoke harness supports linear, DLA, and Titans paths with schema-stable metrics.
 - NIAH and MQAR deterministic harnesses are implemented.
 - LongBench and retrieval scaffold runners are implemented with artifact output contracts.
+- LongBench and retrieval runners provide an optional JSONL dataset-file ingestion path.
 - Artifact bundles include manifest, metrics, row-level, CSV, and report outputs.
+- Release-gate automation emits phase summaries and benchmark trend reports.
+- Release-gate checker enforces required evidence files before parity claims.
+- Tokenizer/data/training scripts now execute deterministic non-placeholder flows with explicit manifests.
+- Training writes real `torch.save` checkpoints and supports resume-path parity checks.
 
 ## Unsupported claims
 
@@ -32,14 +37,14 @@ This repository provides mechanism-level implementation evidence for core Memory
 
 - Phase 0: 100%
 - Phase 1: 100%
-- Phase 2: 85%
-- Phase 3: 70%
-- Phase 4: 10%
-- Phase 5: 35%
-- Overall weighted progress: **73.50%**
+- Phase 2: 94%
+- Phase 3: 87%
+- Phase 4: 75%
+- Phase 5: 72%
+- Overall weighted progress: **90.75%**
 
 ## Next milestones
 
-1. Replace scaffold benchmark adapters with model-backed evaluators.
-2. Execute dataset-backed LongBench/retrieval runs.
-3. Execute scale-oriented training/eval checkpoints and parity audits.
+1. Replace benchmark generic adapters with paper-faithful model-backed evaluators.
+2. Integrate full LongBench/retrieval datasets and publish parity deltas.
+3. Execute scale-oriented training/eval checkpoints and throughput audits on target hardware.

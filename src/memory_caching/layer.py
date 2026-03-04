@@ -6,7 +6,13 @@ import torch
 import torch.nn as nn
 
 from .config import MCConfig, StateInitMode
-from .contracts import MemoryBackend, MixableMemoryBackend, SegmentCache
+from .contracts import (
+    MemoryBackend,
+    MixableMemoryBackend,
+    SegmentCache,
+    ensure_backend_state,
+    ensure_head_tensor,
+)
 from .segmentation import (
     constant_segments,
     logarithmic_segments,
@@ -32,6 +38,7 @@ class MemoryCachingLayer(nn.Module):
 
         self.config = config
         self.backend = backend
+        self._backend_supports_state_mixing = isinstance(backend, MixableMemoryBackend)
         self.head_dim = config.d_model // config.num_heads
 
         self.q_proj = nn.Linear(config.d_model, config.d_model, bias=False)
@@ -47,6 +54,20 @@ class MemoryCachingLayer(nn.Module):
     def _merge_heads(self, x: Tensor) -> Tensor:
         bsz, seq_len, num_heads, head_dim = x.shape
         return x.reshape(bsz, seq_len, num_heads * head_dim)
+
+    def _assert_projected_tensor(
+        self,
+        *,
+        name: str,
+        value: Tensor,
+        batch_size: int,
+        seq_len: int,
+    ) -> None:
+        expected = (batch_size, seq_len, self.config.num_heads, self.head_dim)
+        if tuple(value.shape) != expected:
+            raise RuntimeError(
+                f"{name} expected shape {expected}, got {tuple(value.shape)}"
+            )
 
     def _build_segment_spans(
         self,
@@ -113,9 +134,7 @@ class MemoryCachingLayer(nn.Module):
         scores = self._context_scores(u_t, contexts)
         weights = torch.softmax(scores, dim=-1)
 
-        if self.config.aggregation == "soup" and isinstance(
-            self.backend, MixableMemoryBackend
-        ):
+        if self.config.aggregation == "soup" and self._backend_supports_state_mixing:
             states = [c.mem_state for c in cached] + [online_state]
             mixed_state = self.backend.mix_states(states, weights)
             return self.backend.apply(mixed_state, q_t)
@@ -233,6 +252,10 @@ class MemoryCachingLayer(nn.Module):
         k = self._split_heads(self.k_proj(x))
         v = self._split_heads(self.v_proj(x))
         u = self._split_heads(self.u_proj(x))
+        self._assert_projected_tensor(name="q", value=q, batch_size=bsz, seq_len=seq_len)
+        self._assert_projected_tensor(name="k", value=k, batch_size=bsz, seq_len=seq_len)
+        self._assert_projected_tensor(name="v", value=v, batch_size=bsz, seq_len=seq_len)
+        self._assert_projected_tensor(name="u", value=u, batch_size=bsz, seq_len=seq_len)
 
         outputs = torch.empty_like(q)
         cached: list[SegmentCache] = []
@@ -251,11 +274,21 @@ class MemoryCachingLayer(nn.Module):
                 )
             else:
                 raise ValueError(f"Unsupported state_init_mode: {effective_init_mode}")
+            online_state = ensure_backend_state(online_state, stage="init_state")
 
             online_context = torch.zeros(
                 bsz,
                 self.config.num_heads,
                 self.head_dim,
+                device=x.device,
+                dtype=x.dtype,
+            )
+            ensure_head_tensor(
+                "online_context",
+                online_context,
+                batch_size=bsz,
+                num_heads=self.config.num_heads,
+                head_dim=self.head_dim,
                 device=x.device,
                 dtype=x.dtype,
             )
@@ -265,18 +298,83 @@ class MemoryCachingLayer(nn.Module):
                 v_t = v[:, t]
                 q_t = q[:, t]
                 u_t = q_t if self.config.use_q_as_u else u[:, t]
+                ensure_head_tensor(
+                    "k_t",
+                    k_t,
+                    batch_size=bsz,
+                    num_heads=self.config.num_heads,
+                    head_dim=self.head_dim,
+                    device=x.device,
+                    dtype=x.dtype,
+                )
+                ensure_head_tensor(
+                    "v_t",
+                    v_t,
+                    batch_size=bsz,
+                    num_heads=self.config.num_heads,
+                    head_dim=self.head_dim,
+                    device=x.device,
+                    dtype=x.dtype,
+                )
+                ensure_head_tensor(
+                    "q_t",
+                    q_t,
+                    batch_size=bsz,
+                    num_heads=self.config.num_heads,
+                    head_dim=self.head_dim,
+                    device=x.device,
+                    dtype=x.dtype,
+                )
+                ensure_head_tensor(
+                    "u_t",
+                    u_t,
+                    batch_size=bsz,
+                    num_heads=self.config.num_heads,
+                    head_dim=self.head_dim,
+                    device=x.device,
+                    dtype=x.dtype,
+                )
 
                 online_state = self.backend.update(online_state, k_t, v_t)
+                online_state = ensure_backend_state(online_state, stage="update")
                 online_context = online_context + k_t
+                ensure_head_tensor(
+                    "online_context",
+                    online_context,
+                    batch_size=bsz,
+                    num_heads=self.config.num_heads,
+                    head_dim=self.head_dim,
+                    device=x.device,
+                    dtype=x.dtype,
+                )
 
-                outputs[:, t] = self._aggregate_token(
+                out_t = self._aggregate_token(
                     q_t=q_t,
                     u_t=u_t,
                     online_state=online_state,
                     cached=cached,
                     online_context=online_context,
                 )
+                ensure_head_tensor(
+                    "aggregate_output",
+                    out_t,
+                    batch_size=bsz,
+                    num_heads=self.config.num_heads,
+                    head_dim=self.head_dim,
+                    device=x.device,
+                    dtype=x.dtype,
+                )
+                outputs[:, t] = out_t
 
+            ensure_head_tensor(
+                "segment_context",
+                online_context,
+                batch_size=bsz,
+                num_heads=self.config.num_heads,
+                head_dim=self.head_dim,
+                device=x.device,
+                dtype=x.dtype,
+            )
             cached.append(
                 SegmentCache(
                     mem_state=self._snapshot_state(online_state),

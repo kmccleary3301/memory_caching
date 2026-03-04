@@ -13,6 +13,7 @@ class BenchmarkConfig:
     lengths: tuple[int, ...]
     seed: int
     adapter: str
+    dataset_file: str | None = None
 
     def __post_init__(self) -> None:
         if len(self.lengths) == 0:
@@ -25,3 +26,5 @@ class BenchmarkConfig:
             raise ValueError("task must be non-empty")
         if not self.adapter:
             raise ValueError("adapter must be non-empty")
+        if self.dataset_file is not None and not self.dataset_file.strip():
+            raise ValueError("dataset_file must be non-empty when provided")

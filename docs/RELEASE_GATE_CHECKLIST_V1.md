@@ -6,10 +6,24 @@
 - [ ] `./scripts/checks/phase2.sh`
 - [ ] `./scripts/checks/bench_smoke.sh`
 - [ ] `./scripts/checks/pipeline_smoke.sh`
-- [ ] `uv run python scripts/reports/validate_evidence_bundle.py --root outputs/benchmarks`
+- [ ] `./scripts/checks/resume_consistency.sh`
+- [ ] `uv run python scripts/reports/validate_evidence_bundle.py --root outputs/benchmarks/phase3_smoke`
+- [ ] `uv run python scripts/reports/quarantine_legacy_artifacts.py --root outputs/benchmarks/phase3_smoke --report outputs/reports/quarantine_scan.json`
+- [ ] `uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_gate_v1.json`
 - [ ] claim-to-evidence matrix updated
 - [ ] reproduction report updated
 - [ ] progress ledger updated
+
+## Required generated artifacts
+
+- [ ] `outputs/checks/phase2_summary.json`
+- [ ] `outputs/checks/phase3_summary.json`
+- [ ] `outputs/checks/phase4_summary.json`
+- [ ] `outputs/checks/resume_consistency.json`
+- [ ] `outputs/reports/phase3_benchmark_trend.json`
+- [ ] `outputs/reports/phase3_benchmark_trend.md`
+- [ ] `outputs/reports/release_gate_v1.json`
+- [ ] `outputs/reports/quarantine_scan.json`
 
 ## Blocking policy
 

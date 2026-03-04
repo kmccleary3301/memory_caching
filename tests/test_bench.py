@@ -90,6 +90,40 @@ def test_run_longbench_suite_scaffold() -> None:
     assert len(result["rows"]) == 4
 
 
+def test_run_longbench_suite_with_dataset_file(tmp_path) -> None:
+    dataset_file = tmp_path / "longbench.jsonl"
+    dataset_file.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "task_group": "single_doc_qa",
+                        "prompt": "QUESTION: reply with ANSWER_OK\nANSWER:",
+                        "answer": "ANSWER_OK",
+                    }
+                ),
+                json.dumps(
+                    {
+                        "task_group": "single_doc_qa",
+                        "prompt": "QUESTION: reply with ANSWER_OK\nANSWER:",
+                        "answer": "ANSWER_OK",
+                    }
+                ),
+            ]
+        )
+        + "\n"
+    )
+    result = run_longbench_suite(
+        adapters=[LinearMCAdapter()],
+        tasks=["single_doc_qa"],
+        samples_per_task=2,
+        seed=0,
+        dataset_file=str(dataset_file),
+    )
+    assert result["benchmark"] == "longbench"
+    assert len(result["rows"]) == 1
+
+
 def test_run_longbench_unknown_task_raises() -> None:
     with pytest.raises(ValueError):
         run_longbench_suite(
@@ -110,6 +144,43 @@ def test_run_retrieval_suite_and_truncation_contract() -> None:
     )
     assert result["benchmark"] == "retrieval"
     assert len(result["rows"]) == 8
+
+
+def test_run_retrieval_suite_with_dataset_file(tmp_path) -> None:
+    dataset_file = tmp_path / "retrieval.jsonl"
+    dataset_file.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "dataset": "swde",
+                        "document": "retrieval evidence row 1",
+                        "question": "return RETRIEVAL_OK",
+                        "answer": "RETRIEVAL_OK",
+                    }
+                ),
+                json.dumps(
+                    {
+                        "dataset": "swde",
+                        "document": "retrieval evidence row 2",
+                        "question": "return RETRIEVAL_OK",
+                        "answer": "RETRIEVAL_OK",
+                    }
+                ),
+            ]
+        )
+        + "\n"
+    )
+    result = run_retrieval_suite(
+        adapters=[LinearMCAdapter()],
+        datasets=["swde"],
+        truncation_lengths=[64],
+        samples_per_dataset=2,
+        seed=0,
+        dataset_file=str(dataset_file),
+    )
+    assert result["benchmark"] == "retrieval"
+    assert len(result["rows"]) == 1
 
 
 @pytest.mark.parametrize("bad_len", [0, -1])

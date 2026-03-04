@@ -18,6 +18,13 @@
 - `summary_csv_file` (string path)
 - `report_file` (string path)
 
+## Validation constraints
+
+- `schema_version` must be `v1`.
+- `run_type` must be one of: `niah`, `mqar`, `longbench`, `retrieval`.
+- `metrics_file`, `rows_file`, `summary_csv_file`, `report_file` must all exist.
+- `metrics.json` must contain numeric `mean_accuracy` and list `rows`.
+
 ## Example
 
 ```json

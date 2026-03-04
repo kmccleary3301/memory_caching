@@ -10,6 +10,7 @@
 - tests:
 - smoke:
 - benchmark runs:
+- release gate:
 
 ## What regressed
 
@@ -24,3 +25,8 @@
 - summary.csv:
 - report.md:
 - manifest.json:
+- phase2_summary.json:
+- phase3_summary.json:
+- phase4_summary.json:
+- phase3_benchmark_trend.json:
+- release_gate_v1.json:

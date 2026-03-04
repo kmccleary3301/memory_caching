@@ -1,0 +1,4 @@
+{"dataset":"swde","document":"example swde document 1","question":"return RETRIEVAL_OK","answer":"RETRIEVAL_OK"}
+{"dataset":"swde","document":"example swde document 2","question":"return RETRIEVAL_OK","answer":"RETRIEVAL_OK"}
+{"dataset":"squad","document":"example squad context 1","question":"return RETRIEVAL_OK","answer":"RETRIEVAL_OK"}
+{"dataset":"squad","document":"example squad context 2","question":"return RETRIEVAL_OK","answer":"RETRIEVAL_OK"}

@@ -15,16 +15,20 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 - Backends: linear, DLA, Titans.
 - Smoke harness for train/eval across all backends.
 - Benchmark harnesses: NIAH, MQAR, LongBench scaffold, retrieval scaffold.
+- Optional JSONL dataset-file ingestion path for LongBench/retrieval runners.
+- Included sample dataset files: `examples/longbench_subset.jsonl`, `examples/retrieval_subset.jsonl`.
+- Deterministic tokenizer/data/train/eval pipeline with real checkpoint artifacts.
 - Artifact bundles: metrics + rows + csv + report + manifest.
 
 ## Quickstart
 
 ```bash
 uv sync --extra dev
-uv run python -m pytest -q
 ./scripts/checks/phase2.sh
 ./scripts/checks/bench_smoke.sh
 ./scripts/checks/pipeline_smoke.sh
+./scripts/checks/resume_consistency.sh
+uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_gate_v1.json
 ```
 
 ## Key docs
@@ -34,7 +38,10 @@ uv run python -m pytest -q
 - `docs/CLAIM_BOUNDARY.md`
 - `docs/RELEASE_GATE_CHECKLIST_V1.md`
 - `docs/BACKEND_CAPABILITY_MATRIX.md`
+- `docs/BACKEND_API_CONTRACT.md`
+- `docs/BACKEND_REPRODUCIBILITY.md`
 - `docs/BENCHMARK_COMMAND_MATRIX.md`
+- `docs/BENCHMARK_SWEEP_RUNBOOK.md`
 - `docs/BENCHMARK_EVAL_CONTRACT.md`
 - `docs/TRAINING_BOOTSTRAP.md`
 - `docs/PROGRESS_LEDGER.md`

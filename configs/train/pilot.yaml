@@ -5,3 +5,6 @@ steps: 1000
 save_every: 100
 eval_every: 100
 checkpoint_dir: artifacts/checkpoints/pilot
+lr: 0.0005
+d_model: 64
+vocab_size: 32768

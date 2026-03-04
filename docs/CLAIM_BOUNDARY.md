@@ -4,6 +4,7 @@
 
 - Mechanism-level implementation completeness for supported modules.
 - Deterministic benchmark harness behavior for synthetic suites.
+- Deterministic benchmark harness behavior for dataset-file ingestion mode.
 - Evidence artifact generation and schema conformance.
 
 ## Blocked claims (until further evidence)

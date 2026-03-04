@@ -15,6 +15,7 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 - Backends: linear, DLA, Titans.
 - Smoke harness for train/eval across all backends.
 - Benchmark harnesses: NIAH, MQAR, LongBench scaffold, retrieval scaffold.
+- Benchmark scoring follows explicit task-aligned policies (`exact_match`, `token_f1`, `rouge_l_f1`) with per-row metric labels.
 - Optional JSONL dataset-file ingestion path for LongBench/retrieval runners.
 - Included sample dataset files: `examples/longbench_subset.jsonl`, `examples/retrieval_subset.jsonl`.
 - Deterministic tokenizer/data/train/eval pipeline with real checkpoint artifacts.

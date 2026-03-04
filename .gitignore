@@ -9,3 +9,13 @@ __pycache__/
 outputs/
 artifacts/
 data/processed/
+
+# Model checkpoints / weights (never commit)
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.onnx
+*.h5
+*.keras

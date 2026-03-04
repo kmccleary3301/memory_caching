@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import random
 import uuid
 
+from .scoring import exact_match
+
 
 @dataclass(frozen=True)
 class NIAHExample:
@@ -93,4 +95,4 @@ def normalize_answer(text: str) -> str:
 
 
 def score_niah(prediction: str, answer: str) -> float:
-    return 1.0 if normalize_answer(prediction) == normalize_answer(answer) else 0.0
+    return exact_match(prediction, answer)

@@ -4,7 +4,12 @@ from dataclasses import asdict, dataclass
 from typing import Any, Callable, Sequence
 
 from .adapters import BenchmarkAdapter
-from .longbench import LONG_BENCH_TASK_GROUPS, load_longbench_examples, score_longbench
+from .longbench import (
+    LONG_BENCH_TASK_GROUPS,
+    load_longbench_examples,
+    longbench_metric_for_task_group,
+    score_longbench,
+)
 from .mqar import generate_mqar_examples, score_mqar
 from .niah import generate_niah_examples, score_niah
 from .retrieval import (
@@ -22,6 +27,7 @@ class TaskMetric:
     context_length: int
     samples: int
     accuracy: float
+    metric: str = "exact_match"
 
 
 def run_niah_suite(
@@ -56,6 +62,7 @@ def run_niah_suite(
                         context_length=length,
                         samples=len(examples),
                         accuracy=acc,
+                        metric="exact_match",
                     )
                 )
 
@@ -105,6 +112,8 @@ def run_mqar_suite(
                 "num_queries": num_queries,
                 "micro_accuracy": micro_acc,
                 "macro_accuracy": macro_acc,
+                "micro_metric": "query_exact_match",
+                "macro_metric": "all_queries_exact_match",
             }
         )
 
@@ -131,6 +140,7 @@ def run_longbench_suite(
     rows: list[dict[str, object]] = []
     for adapter in adapters:
         for task in tasks:
+            metric_name = longbench_metric_for_task_group(task)
             examples = load_longbench_examples(
                 task_group=task,
                 samples=samples_per_task,
@@ -140,7 +150,7 @@ def run_longbench_suite(
             scores: list[float] = []
             for ex in examples:
                 pred = adapter.predict(ex.prompt)
-                scores.append(score_longbench(pred, ex.answer))
+                scores.append(score_longbench(pred, ex.answer, task_group=task))
 
             rows.append(
                 {
@@ -148,6 +158,7 @@ def run_longbench_suite(
                     "task": task,
                     "samples": len(examples),
                     "accuracy": float(sum(scores) / len(scores)) if scores else 0.0,
+                    "metric": metric_name,
                 }
             )
 
@@ -198,6 +209,7 @@ def run_retrieval_suite(
                         "truncation_length": tlen,
                         "samples": len(examples),
                         "accuracy": float(sum(scores) / len(scores)) if scores else 0.0,
+                        "metric": "max(exact_match,token_f1)",
                     }
                 )
 

@@ -7,10 +7,17 @@
 
 ## Scoring
 
-- NIAH: normalized exact-match accuracy.
-- MQAR: micro and macro accuracy fields.
-- LongBench scaffold: task-group accuracy.
-- Retrieval scaffold: dataset x truncation accuracy.
+- NIAH: `exact_match` over normalized text.
+- MQAR:
+  - `micro_accuracy`: per-query exact-match rate (`query_exact_match`).
+  - `macro_accuracy`: all-queries-correct indicator (`all_queries_exact_match`).
+- LongBench: task-group metric mapping.
+  - `single_doc_qa`: `token_f1`
+  - `multi_doc_qa`: `token_f1`
+  - `summarization`: `rouge_l_f1`
+  - `few_shot`: `exact_match`
+  - `code`: `exact_match`
+- Retrieval: `max(exact_match, token_f1)` per dataset x truncation row.
 
 ## Dataset-backed mode (LongBench/Retrieval)
 

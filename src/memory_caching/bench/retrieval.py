@@ -6,6 +6,8 @@ import random
 from pathlib import Path
 from typing import Any
 
+from .scoring import exact_match, token_f1
+
 
 SUPPORTED_RETRIEVAL_DATASETS = {"swde", "squad", "fda"}
 
@@ -122,4 +124,4 @@ def load_retrieval_examples(
 
 
 def score_retrieval(prediction: str, answer: str) -> float:
-    return 1.0 if prediction.strip().upper() == answer.strip().upper() else 0.0
+    return max(exact_match(prediction, answer), token_f1(prediction, answer))

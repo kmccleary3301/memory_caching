@@ -45,3 +45,11 @@
 - Added phase-2 parity/guard mode tests and validated `phase2.sh` at 69 passing tests.
 - Added explicit model-backed adapter interface and revalidated full bench smoke artifacts.
 - Updated progress snapshot to 97.70%.
+
+## 2026-03-04 final plan-completion checkpoint
+
+- Wired unified benchmark scoring helpers into NIAH, MQAR, LongBench, and retrieval runners.
+- Added explicit task-group metric routing for LongBench and row-level metric labels in benchmark outputs.
+- Added scoring-focused bench tests for MQAR extraction behavior, LongBench metric policy, and retrieval F1 fallback behavior.
+- Updated benchmark evaluation contract and claim matrix to reflect task-aligned scoring and dataset-backed scaffold parity evidence.
+- Finalized progress ledger and reproduction report to 100.00% plan completion while preserving blocked full paper-scale parity boundaries.

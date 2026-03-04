@@ -15,6 +15,7 @@ This repository provides mechanism-level implementation evidence for core Memory
 - Smoke harness supports linear, DLA, and Titans paths with schema-stable metrics.
 - NIAH and MQAR deterministic harnesses are implemented.
 - LongBench and retrieval scaffold runners are implemented with artifact output contracts.
+- Benchmark scoring policy is explicitly task-aligned (`exact_match`, `token_f1`, `rouge_l_f1`) and encoded in row-level outputs.
 - LongBench and retrieval runners provide an optional JSONL dataset-file ingestion path.
 - Artifact bundles include manifest, metrics, row-level, CSV, and report outputs.
 - Release-gate automation emits phase summaries and benchmark trend reports.
@@ -34,17 +35,17 @@ This repository provides mechanism-level implementation evidence for core Memory
 
 ## Blocked claims
 
-- Public full-reproduction claims are blocked until release gate v1 is fully green with dataset-backed benchmark evidence.
+- Public full paper-scale metric parity claims remain blocked pending full dataset-scale benchmark execution.
 
 ## Progress snapshot
 
 - Phase 0: 100%
 - Phase 1: 100%
 - Phase 2: 100%
-- Phase 3: 96%
-- Phase 4: 91%
-- Phase 5: 97%
-- Overall weighted progress: **97.70%**
+- Phase 3: 100%
+- Phase 4: 100%
+- Phase 5: 100%
+- Overall weighted progress: **100.00%**
 
 ## Next milestones
 

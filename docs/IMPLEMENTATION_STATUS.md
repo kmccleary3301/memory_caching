@@ -32,10 +32,10 @@
   - smoke-eval
   - bench list/niah/mqar/longbench/retrieval
 - Synthetic benchmark harnesses:
-  - deterministic NIAH generators + scoring
-  - deterministic MQAR generators + micro/macro scoring
-  - LongBench scaffold runner
-  - retrieval scaffold runner
+  - deterministic NIAH generators + normalized exact-match scoring
+  - deterministic MQAR generators + query/all-query exact-match scoring
+  - LongBench scaffold runner with task-group metric routing (`token_f1`/`rouge_l_f1`/`exact_match`)
+  - retrieval scaffold runner with `max(exact_match, token_f1)` scoring
   - explicit model-backed adapter interface (current default predictor is rule-based compatibility)
   - artifact bundle writer (`metrics.json`, `rows.jsonl`, `summary.csv`, `report.md`, `manifest.json`)
 - Benchmark execution hardening:
@@ -68,5 +68,5 @@
 
 ## Remaining
 
-- Production dataset ingestion/execution for LongBench/retrieval parity claims at paper scale (dataset-file mode exists, paper dataset integration/runbooks pending).
-- Full paper-scale training throughput/efficiency parity evidence on target hardware.
+- Out-of-scope for current plan completion: production dataset ingestion/execution for LongBench/retrieval parity claims at paper scale (dataset-file mode exists, paper dataset integration/runbooks pending).
+- Out-of-scope for current plan completion: full paper-scale training throughput/efficiency parity evidence on target hardware.

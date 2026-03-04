@@ -7,8 +7,10 @@ import pytest
 from memory_caching.bench.adapters import DLAMCAdapter, LinearMCAdapter, TitansMCAdapter
 from memory_caching.bench.artifacts import create_bundle, write_artifacts
 from memory_caching.bench.config import BenchmarkConfig
-from memory_caching.bench.mqar import generate_mqar_examples
+from memory_caching.bench.longbench import longbench_metric_for_task_group, score_longbench
+from memory_caching.bench.mqar import generate_mqar_examples, score_mqar
 from memory_caching.bench.niah import generate_niah_examples, normalize_answer
+from memory_caching.bench.retrieval import score_retrieval
 from memory_caching.bench.runner import (
     get_runner,
     list_runners,
@@ -46,6 +48,37 @@ def test_niah_normalization_policy() -> None:
     assert normalize_answer("  A   B  ") == "a b"
 
 
+def test_mqar_scoring_multi_answer_extraction() -> None:
+    micro, macro = score_mqar("ANSWER: V_000 | V_001", ("V_000", "V_001"))
+    assert micro == 1.0
+    assert macro == 1.0
+
+    micro_partial, macro_partial = score_mqar("ANSWER: V_000", ("V_000", "V_001"))
+    assert micro_partial == 0.5
+    assert macro_partial == 0.0
+
+
+def test_longbench_task_group_metric_mapping_and_scoring() -> None:
+    assert longbench_metric_for_task_group("summarization") == "rouge_l_f1"
+    assert longbench_metric_for_task_group("code") == "exact_match"
+
+    assert score_longbench("function x() {}", "function x() {}", task_group="code") == 1.0
+    assert score_longbench("the answer is blue", "blue", task_group="single_doc_qa") > 0.0
+    assert (
+        score_longbench(
+            "This report summarizes all key findings.",
+            "summary of key findings",
+            task_group="summarization",
+        )
+        > 0.0
+    )
+
+
+def test_retrieval_scoring_uses_exact_or_f1() -> None:
+    assert score_retrieval("Paris", "Paris") == 1.0
+    assert score_retrieval("The capital is Paris.", "Paris") > 0.0
+
+
 def test_runner_registry_and_lookup() -> None:
     runners = list_runners()
     assert set(["niah", "mqar", "longbench", "retrieval"]).issubset(set(runners))
@@ -63,6 +96,7 @@ def test_run_niah_suite_with_three_adapters() -> None:
     )
     assert result["benchmark"] == "niah"
     assert len(result["rows"]) == 3 * 2 * 2
+    assert result["rows"][0]["metric"] == "exact_match"
 
 
 def test_run_mqar_suite_with_three_adapters_has_micro_macro() -> None:
@@ -77,6 +111,8 @@ def test_run_mqar_suite_with_three_adapters_has_micro_macro() -> None:
     assert len(result["rows"]) == 3
     assert "micro_accuracy" in result["rows"][0]
     assert "macro_accuracy" in result["rows"][0]
+    assert result["rows"][0]["micro_metric"] == "query_exact_match"
+    assert result["rows"][0]["macro_metric"] == "all_queries_exact_match"
 
 
 def test_run_longbench_suite_scaffold() -> None:
@@ -88,6 +124,7 @@ def test_run_longbench_suite_scaffold() -> None:
     )
     assert result["benchmark"] == "longbench"
     assert len(result["rows"]) == 4
+    assert "metric" in result["rows"][0]
 
 
 def test_run_longbench_suite_with_dataset_file(tmp_path) -> None:
@@ -144,6 +181,7 @@ def test_run_retrieval_suite_and_truncation_contract() -> None:
     )
     assert result["benchmark"] == "retrieval"
     assert len(result["rows"]) == 8
+    assert result["rows"][0]["metric"] == "max(exact_match,token_f1)"
 
 
 def test_run_retrieval_suite_with_dataset_file(tmp_path) -> None:

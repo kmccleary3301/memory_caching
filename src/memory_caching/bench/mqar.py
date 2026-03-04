@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import random
 
+from .scoring import exact_match, extract_answer_candidates
+
 
 @dataclass(frozen=True)
 class MQARExample:
@@ -53,8 +55,27 @@ def generate_mqar_examples(
 
 
 def score_mqar(prediction: str, answers: tuple[str, ...]) -> tuple[float, float]:
-    pred = prediction.strip().upper()
-    flags = [1.0 if pred == ans.strip().upper() else 0.0 for ans in answers]
+    if len(answers) == 0:
+        return 0.0, 0.0
+
+    candidates = extract_answer_candidates(prediction)
+    if len(candidates) == 0:
+        return 0.0, 0.0
+
+    available = [candidate for candidate in candidates]
+    flags: list[float] = []
+    for answer in answers:
+        match_index = -1
+        for idx, candidate in enumerate(available):
+            if exact_match(candidate, answer) == 1.0:
+                match_index = idx
+                break
+        if match_index < 0:
+            flags.append(0.0)
+            continue
+        flags.append(1.0)
+        available.pop(match_index)
+
     micro = float(sum(flags) / len(flags)) if flags else 0.0
-    macro = micro
+    macro = 1.0 if flags and all(flag == 1.0 for flag in flags) else 0.0
     return micro, macro

@@ -18,6 +18,7 @@
 | Benchmark stack exposes a model-backed adapter interface | Adapter API code | `src/memory_caching/bench/adapters.py` |
 | LongBench/retrieval scaffolds validate configs and produce rows | Unit tests + runner code | `tests/test_bench.py`, `src/memory_caching/bench/runner.py` |
 | LongBench/retrieval support JSONL dataset-file ingestion path | Unit tests + loader code + sample files | `tests/test_bench.py`, `src/memory_caching/bench/longbench.py`, `src/memory_caching/bench/retrieval.py`, `examples/` |
+| Benchmark scoring is task-aligned and explicitly encoded (exact/F1/ROUGE-L) | Runner + scoring code + contract doc + unit tests | `src/memory_caching/bench/scoring.py`, `src/memory_caching/bench/runner.py`, `src/memory_caching/bench/longbench.py`, `src/memory_caching/bench/retrieval.py`, `tests/test_bench.py`, `docs/BENCHMARK_EVAL_CONTRACT.md` |
 | Benchmark artifacts include manifest, rows, csv, report | Unit tests + code | `tests/test_bench.py`, `src/memory_caching/bench/artifacts.py` |
 | Backend I/O/state contract is runtime-enforced in layer execution | Runtime assertions + contract doc | `src/memory_caching/layer.py`, `src/memory_caching/contracts.py`, `docs/BACKEND_API_CONTRACT.md` |
 | Backend contract guard failures are covered by negative tests | Unit tests | `tests/test_backend_contract_guards.py` |
@@ -34,11 +35,12 @@
 | Resume path can be parity-checked against uninterrupted training | Consistency check + parity report script | `scripts/checks/resume_consistency.sh`, `scripts/reports/checkpoint_parity.py` |
 | Phase3 parity/statistics/checksum evidence is generated and gate-enforced | Bench script + report scripts + gate | `scripts/checks/bench_smoke.sh`, `scripts/reports/parity_dashboard.py`, `scripts/reports/stat_summary.py`, `scripts/reports/artifact_checksums.py`, `scripts/reports/release_gate_v1.py` |
 | Clean-environment reproducibility pass can be archived and gate-checked | Independent repro script + archived manifest + gate check | `scripts/checks/independent_repro_pass.sh`, `outputs/independent_repro/*/manifest.json`, `scripts/reports/release_gate_v1.py` |
+| Dataset-backed scaffold parity deltas can be produced reproducibly with bounded claims | Benchmark outputs + parity/stat/checksum reports + release gate evidence checks | `outputs/benchmarks/phase3_smoke/`, `outputs/reports/phase3_parity_dashboard.json`, `outputs/reports/phase3_stat_summary.json`, `outputs/reports/phase3_artifact_checksums.json`, `scripts/reports/release_gate_v1.py` |
 
 ## Blocked claims
 
 | Blocked claim | Why blocked | Required evidence to unblock |
 |---|---|---|
-| Full paper-metric parity | LongBench/retrieval still scaffold-level | full dataset-backed runs + parity tables |
+| Full paper-scale metric parity against all paper tables | Current evidence is scaffold/sample-level only | full dataset-backed runs + parity tables at paper scale |
 | Throughput parity vs paper systems | no throughput benchmark suite yet | reproducible perf harness + hardware metadata |
 | Exact unpublished implementation parity | author internals unavailable | paper/code release or direct author confirmation |

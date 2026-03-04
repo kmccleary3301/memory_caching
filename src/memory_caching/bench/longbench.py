@@ -6,6 +6,8 @@ import random
 from pathlib import Path
 from typing import Any
 
+from .scoring import exact_match, rouge_l_f1, token_f1
+
 
 LONG_BENCH_TASK_GROUPS = {
     "single_doc_qa": ["narrativeqa", "qasper", "multifieldqa"],
@@ -13,6 +15,14 @@ LONG_BENCH_TASK_GROUPS = {
     "summarization": ["gov_report", "qmsum", "multi_news"],
     "few_shot": ["trec", "triviaqa", "samsum"],
     "code": ["lcc", "repobench_p"],
+}
+
+LONG_BENCH_TASK_GROUP_METRICS = {
+    "single_doc_qa": "token_f1",
+    "multi_doc_qa": "token_f1",
+    "summarization": "rouge_l_f1",
+    "few_shot": "exact_match",
+    "code": "exact_match",
 }
 
 
@@ -102,5 +112,16 @@ def load_longbench_examples(
     return picker.sample(rows, k=samples)
 
 
-def score_longbench(prediction: str, answer: str) -> float:
-    return 1.0 if prediction.strip().upper() == answer.strip().upper() else 0.0
+def longbench_metric_for_task_group(task_group: str) -> str:
+    if task_group not in LONG_BENCH_TASK_GROUP_METRICS:
+        raise ValueError(f"unknown longbench task group: {task_group}")
+    return LONG_BENCH_TASK_GROUP_METRICS[task_group]
+
+
+def score_longbench(prediction: str, answer: str, *, task_group: str | None = None) -> float:
+    metric = "token_f1" if task_group is None else longbench_metric_for_task_group(task_group)
+    if metric == "exact_match":
+        return exact_match(prediction, answer)
+    if metric == "rouge_l_f1":
+        return rouge_l_f1(prediction, answer)
+    return token_f1(prediction, answer)

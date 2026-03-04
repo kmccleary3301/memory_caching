@@ -74,6 +74,9 @@
 - Executed dataset-backed benchmark dry run with local subset corpora:
   - `outputs/benchmarks/full_dataset_dry_run/`
   - `outputs/reports/full_dataset_dry_run_*.json`
+- Executed aligned dry-run (`full_dataset_dry_run_v2`) with MQAR query-grid aligned to parity target profile:
+  - `outputs/benchmarks/full_dataset_dry_run_v2/`
+  - `outputs/reports/full_dataset_dry_run_v2_*.json`
 - Added CI artifact guardrails:
   - `scripts/checks/no_large_artifacts.sh`
   - workflow enforcement in `.github/workflows/repro_checks.yml`

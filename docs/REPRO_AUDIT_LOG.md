@@ -53,3 +53,27 @@
 - Added scoring-focused bench tests for MQAR extraction behavior, LongBench metric policy, and retrieval F1 fallback behavior.
 - Updated benchmark evaluation contract and claim matrix to reflect task-aligned scoring and dataset-backed scaffold parity evidence.
 - Finalized progress ledger and reproduction report to 100.00% plan completion while preserving blocked full paper-scale parity boundaries.
+
+## 2026-03-04 paper-scale execution startup checkpoint
+
+- Added `torch.compile` controls to `scripts/train/train_loop.py` (`--compile`, mode/backend/fullgraph/dynamic, matmul precision metadata).
+- Executed full training run matrix on GPU (`RTX 6000 Ada`) with compile+AMP:
+  - `pilot_full` (`4096`, `1000` steps)
+  - `mid_full` (`8192`, `5000` steps)
+  - `target_full` (`16384`, `10000` steps)
+- Generated periodic eval artifacts:
+  - `outputs/eval/pilot_full_periodic_eval.json`
+  - `outputs/eval/mid_full_periodic_eval.json`
+  - `outputs/eval/target_full_periodic_eval.json`
+- Generated run telemetry/parity artifacts:
+  - `outputs/reports/training_telemetry/full_run_summary.json`
+  - `outputs/reports/training_parity_table_full.json`
+  - `docs/TRAINING_PARITY_TABLE_FULL.md`
+- Added paper-scale automation script:
+  - `scripts/checks/paper_scale_execution.sh`
+- Executed dataset-backed benchmark dry run with local subset corpora:
+  - `outputs/benchmarks/full_dataset_dry_run/`
+  - `outputs/reports/full_dataset_dry_run_*.json`
+- Added CI artifact guardrails:
+  - `scripts/checks/no_large_artifacts.sh`
+  - workflow enforcement in `.github/workflows/repro_checks.yml`

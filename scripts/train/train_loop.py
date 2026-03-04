@@ -234,6 +234,20 @@ def main() -> None:
     parser.add_argument("--clip-grad-norm", type=float, default=1.0)
     parser.add_argument("--amp", action="store_true")
     parser.add_argument("--deterministic", action="store_true")
+    parser.add_argument("--compile", action="store_true")
+    parser.add_argument(
+        "--compile-mode",
+        default="default",
+        choices=["default", "reduce-overhead", "max-autotune"],
+    )
+    parser.add_argument("--compile-backend", default="")
+    parser.add_argument("--compile-fullgraph", action="store_true")
+    parser.add_argument("--compile-dynamic", action="store_true")
+    parser.add_argument(
+        "--matmul-precision",
+        default="high",
+        choices=["highest", "high", "medium"],
+    )
     args = parser.parse_args()
 
     cfg_path = Path(args.config)
@@ -281,6 +295,8 @@ def main() -> None:
     torch.manual_seed(args.seed)
     if args.deterministic:
         torch.use_deterministic_algorithms(True)
+    if device.type == "cuda":
+        torch.set_float32_matmul_precision(args.matmul_precision)
     generator = torch.Generator(device="cpu")
     generator.manual_seed(args.seed)
 
@@ -298,6 +314,23 @@ def main() -> None:
     stream_max = max(stream) if len(stream) > 0 else 0
     dynamic_vocab_size = max(vocab_size, stream_max + 2)
     model = TinyLM(vocab_size=dynamic_vocab_size, d_model=d_model).to(device)
+    compile_requested = bool(args.compile)
+    compile_enabled = False
+    compile_error: str | None = None
+    compile_backend = args.compile_backend.strip() or "inductor"
+    if compile_requested:
+        compile_kwargs: dict[str, Any] = {"mode": args.compile_mode}
+        if args.compile_backend.strip():
+            compile_kwargs["backend"] = args.compile_backend.strip()
+        if args.compile_fullgraph:
+            compile_kwargs["fullgraph"] = True
+        if args.compile_dynamic:
+            compile_kwargs["dynamic"] = True
+        try:
+            model = torch.compile(model, **compile_kwargs)
+            compile_enabled = True
+        except Exception as exc:
+            compile_error = str(exc)
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=base_lr,
@@ -363,6 +396,14 @@ def main() -> None:
             "clip_grad_norm": args.clip_grad_norm,
             "amp": bool(args.amp and device.type == "cuda"),
             "deterministic": bool(args.deterministic),
+            "compile_requested": compile_requested,
+            "compile_enabled": compile_enabled,
+            "compile_mode": args.compile_mode,
+            "compile_backend": compile_backend,
+            "compile_fullgraph": bool(args.compile_fullgraph),
+            "compile_dynamic": bool(args.compile_dynamic),
+            "matmul_precision": args.matmul_precision,
+            "compile_error": compile_error,
         },
         step_metrics_tail=step_metrics,
     )
@@ -475,6 +516,14 @@ def main() -> None:
                     "clip_grad_norm": args.clip_grad_norm,
                     "amp": bool(args.amp and device.type == "cuda"),
                     "deterministic": bool(args.deterministic),
+                    "compile_requested": compile_requested,
+                    "compile_enabled": compile_enabled,
+                    "compile_mode": args.compile_mode,
+                    "compile_backend": compile_backend,
+                    "compile_fullgraph": bool(args.compile_fullgraph),
+                    "compile_dynamic": bool(args.compile_dynamic),
+                    "matmul_precision": args.matmul_precision,
+                    "compile_error": compile_error,
                 },
                 step_metrics_tail=step_metrics,
             )
@@ -512,6 +561,14 @@ def main() -> None:
         "clip_grad_norm": args.clip_grad_norm,
         "amp": bool(args.amp and device.type == "cuda"),
         "deterministic": bool(args.deterministic),
+        "compile_requested": compile_requested,
+        "compile_enabled": compile_enabled,
+        "compile_mode": args.compile_mode,
+        "compile_backend": compile_backend,
+        "compile_fullgraph": bool(args.compile_fullgraph),
+        "compile_dynamic": bool(args.compile_dynamic),
+        "matmul_precision": args.matmul_precision,
+        "compile_error": compile_error,
         "device": str(device),
         "save_every": save_every,
         "loss_start": loss_start,

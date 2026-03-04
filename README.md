@@ -26,6 +26,7 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 
 ```bash
 uv sync --extra dev
+./scripts/checks/no_large_artifacts.sh
 ./scripts/checks/phase2.sh
 ./scripts/checks/bench_smoke.sh
 ./scripts/checks/pipeline_smoke.sh
@@ -46,6 +47,7 @@ uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_g
 - `docs/BENCHMARK_SWEEP_RUNBOOK.md`
 - `docs/BENCHMARK_EVAL_CONTRACT.md`
 - `docs/TRAINING_PARITY_TABLE.md`
+- `docs/TRAINING_PARITY_TABLE_FULL.md`
 - `docs/TRAINING_BOOTSTRAP.md`
 - `docs/PROGRESS_LEDGER.md`
 

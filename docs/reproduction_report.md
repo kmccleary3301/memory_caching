@@ -25,6 +25,9 @@ This repository provides mechanism-level implementation evidence for core Memory
 - Benchmark reporting now includes parity dashboard, statistical summary, and checksum archival artifacts.
 - Training parity table artifact is generated and gate-enforced.
 - Independent clean-environment reproduction pass is implemented, archived, and gate-checked.
+- Full-step/full-sequence training matrix (`pilot_full`/`mid_full`/`target_full`) has been executed with compile+AMP telemetry.
+- Dataset-backed benchmark execution path is automated end-to-end via `scripts/checks/paper_scale_execution.sh`.
+- CI now blocks accidental large artifact/weight commits.
 
 ## Unsupported claims
 
@@ -36,6 +39,7 @@ This repository provides mechanism-level implementation evidence for core Memory
 ## Blocked claims
 
 - Public full paper-scale metric parity claims remain blocked pending full dataset-scale benchmark execution.
+- Full paper-scale retrieval/LongBench claims remain blocked until full corpora are mounted and executed outside subset-mode.
 
 ## Progress snapshot
 
@@ -50,5 +54,5 @@ This repository provides mechanism-level implementation evidence for core Memory
 ## Next milestones
 
 1. Replace benchmark generic adapters with paper-faithful model-backed evaluators.
-2. Integrate full LongBench/retrieval datasets and publish parity deltas.
-3. Execute scale-oriented training/eval checkpoints and throughput audits on target hardware.
+2. Integrate full LongBench/retrieval corpora (non-subset files) and publish full-dataset parity deltas.
+3. Publish hardware-normalized throughput/cost comparisons against paper systems.

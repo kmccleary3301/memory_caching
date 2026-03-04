@@ -50,8 +50,10 @@
   - tokenizer config + deterministic vocabulary trainer (JSON model + vocab file + corpus fingerprint)
   - data mixture config + deterministic weighted sampling + split-aware tokenized shard writer (`train/val/test`)
   - train profile configs + actual tiny-LM train loop (`torch.save` checkpoints + resume support + scheduler + telemetry)
+  - compile-aware training controls (`--compile`, mode/backend/fullgraph/dynamic, matmul precision)
   - periodic eval hook reads checkpoint loss tails and emits proxy score
   - resume consistency parity checker (`resume` vs `full` checkpoint tensor diff)
+  - full-run training matrix execution (`pilot_full`, `mid_full`, `target_full`) with archived telemetry/eval artifacts
 - Phase summary artifacts:
   - phase2 summary writer
   - phase3 summary writer
@@ -60,6 +62,7 @@
   - release gate v1
   - release gate checker script
   - independent clean-environment repro pass script + archived manifests
+  - artifact-size/type/path guardrail script integrated in CI
   - claim boundary
   - claim-to-evidence matrix with blocked claims
   - progress updater and evidence validators

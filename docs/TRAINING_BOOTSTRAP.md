@@ -20,3 +20,11 @@
 
 6. Resume determinism check:
 - `./scripts/checks/resume_consistency.sh`
+
+7. Full-sequence/full-step execution (compile + AMP):
+- `uv run python scripts/train/train_loop.py --config configs/train/pilot.yaml --optim-config configs/optim/schedules.yaml --data-dir data/processed --checkpoint-dir artifacts/checkpoints/pilot_full --max-steps 1000 --max-seq-len 4096 --device cuda --seed 0 --compile --compile-mode max-autotune --matmul-precision high --amp`
+- `uv run python scripts/train/train_loop.py --config configs/train/mid.yaml --optim-config configs/optim/schedules.yaml --data-dir data/processed --checkpoint-dir artifacts/checkpoints/mid_full --max-steps 5000 --max-seq-len 8192 --device cuda --seed 0 --compile --compile-mode max-autotune --matmul-precision high --amp`
+- `uv run python scripts/train/train_loop.py --config configs/train/target.yaml --optim-config configs/optim/schedules.yaml --data-dir data/processed --checkpoint-dir artifacts/checkpoints/target_full --max-steps 10000 --max-seq-len 16384 --device cuda --seed 0 --compile --compile-mode max-autotune --matmul-precision high --amp`
+
+8. One-shot automation for full execution matrix:
+- `LONG_BENCH_DATASET_FILE=/abs/path/longbench_full.jsonl RETRIEVAL_DATASET_FILE=/abs/path/retrieval_full.jsonl ./scripts/checks/paper_scale_execution.sh`

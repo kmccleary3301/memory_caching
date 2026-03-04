@@ -65,6 +65,35 @@ This document enumerates the remaining runs required to close paper-scale parity
   - trend/parity/stat/checksum report set
   - claim matrix update with exact unblocked claims
 
+## Automation entrypoint
+
+- Full execution script:
+  - `scripts/checks/paper_scale_execution.sh`
+- Required dataset environment:
+  - `LONG_BENCH_DATASET_FILE=/absolute/path/to/longbench_full.jsonl`
+  - `RETRIEVAL_DATASET_FILE=/absolute/path/to/retrieval_full.jsonl`
+- Safety:
+  - script fails if dataset paths point into `examples/` unless `ALLOW_SUBSET=1`.
+
+## Current execution status (2026-03-04)
+
+- Training matrix completed on GPU with compile+AMP:
+  - `pilot_full` -> `artifacts/checkpoints/pilot_full/step_001000.pt`
+  - `mid_full` -> `artifacts/checkpoints/mid_full/step_005000.pt`
+  - `target_full` -> `artifacts/checkpoints/target_full/step_010000.pt`
+- Training telemetry and parity artifacts generated:
+  - `outputs/reports/training_telemetry/full_run_summary.json`
+  - `outputs/reports/training_parity_table_full.json`
+  - `docs/TRAINING_PARITY_TABLE_FULL.md`
+- Dataset-backed benchmark dry-run generated from local subset corpora:
+  - `outputs/benchmarks/full_dataset_dry_run/`
+  - `outputs/reports/full_dataset_dry_run_benchmark_trend.json`
+  - `outputs/reports/full_dataset_dry_run_parity_dashboard.json`
+  - `outputs/reports/full_dataset_dry_run_stat_summary.json`
+  - `outputs/reports/full_dataset_dry_run_artifact_checksums.json`
+- Remaining blocker for full paper-scale benchmark parity:
+  - full LongBench + retrieval corpus files are not present in repository-local data paths.
+
 ## Exit criteria for 100%
 
 - All four execution matrix runs complete and archived.

@@ -18,6 +18,8 @@
   - `uv run python scripts/reports/parity_dashboard.py --trend-json outputs/reports/phase3_benchmark_trend.json --targets-yaml configs/bench/smoke_targets.yaml --out-md outputs/reports/phase3_parity_dashboard.md --out-json outputs/reports/phase3_parity_dashboard.json`
 - Phase3 statistical summary generation:
   - `uv run python scripts/reports/stat_summary.py --root outputs/benchmarks/phase3_smoke --out-json outputs/reports/phase3_stat_summary.json --out-md outputs/reports/phase3_stat_summary.md`
+- Paper-to-code mapping sync check:
+  - `uv run python scripts/checks/paper_to_code_sync.py`
 - Paper-scale execution automation (strict full-corpus mode):
   - `LONG_BENCH_DATASET_FILE=/abs/path/longbench_full.jsonl RETRIEVAL_DATASET_FILE=/abs/path/retrieval_full.jsonl ./scripts/checks/paper_scale_execution.sh`
 - Paper-scale automation in subset dry-run mode:

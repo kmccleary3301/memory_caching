@@ -4,6 +4,7 @@
 
 - [ ] `uv run python -m pytest -q`
 - [ ] `./scripts/checks/phase2.sh`
+- [ ] `uv run python scripts/checks/paper_to_code_sync.py`
 - [ ] `./scripts/checks/bench_smoke.sh`
 - [ ] `./scripts/checks/pipeline_smoke.sh`
 - [ ] `./scripts/checks/resume_consistency.sh`
@@ -14,6 +15,7 @@
 - [ ] claim-to-evidence matrix updated
 - [ ] reproduction report updated
 - [ ] progress ledger updated
+- [ ] `docs/paper_to_code_map.yaml` and `docs/PAPER_TO_CODE.md` are synchronized
 
 ## Required generated artifacts
 

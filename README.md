@@ -26,6 +26,8 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 
 ## Quickstart
 
+`uv` flow (recommended):
+
 ```bash
 uv sync --extra dev
 ./scripts/checks/no_large_artifacts.sh
@@ -36,9 +38,20 @@ uv sync --extra dev
 uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_gate_v1.json
 ```
 
+`pip` editable flow:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+mc list-variants
+```
+
 ## Key docs
 
 - `docs/reproduction_report.md`
+- `docs/CONTRIBUTOR_ONBOARDING.md`
 - `docs/CLAIM_TO_EVIDENCE_MATRIX.md`
 - `docs/CLAIM_BOUNDARY.md`
 - `docs/RELEASE_GATE_CHECKLIST_V1.md`

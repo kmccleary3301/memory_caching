@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,8 @@ def main() -> None:
         root / "docs/CLAIM_TO_EVIDENCE_MATRIX.md",
         root / "docs/reproduction_report.md",
         root / "docs/PROGRESS_LEDGER.md",
+        root / "docs/paper_to_code_map.yaml",
+        root / "docs/PAPER_TO_CODE.md",
     ]
 
     errors: list[str] = []
@@ -47,6 +50,26 @@ def main() -> None:
         checks.append({"name": f"exists:{path}", "ok": ok})
         if not ok:
             errors.append(f"missing required file: {path}")
+
+    paper_to_code_check = root / "scripts/checks/paper_to_code_sync.py"
+    if paper_to_code_check.exists():
+        proc = subprocess.run(
+            [
+                "python",
+                str(paper_to_code_check),
+                "--project-root",
+                str(root),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        ok = proc.returncode == 0
+        checks.append({"name": "paper_to_code_sync", "ok": ok})
+        if not ok:
+            stderr = (proc.stderr or "").strip()
+            stdout = (proc.stdout or "").strip()
+            details = stderr if stderr else stdout
+            errors.append(f"paper_to_code_sync failed: {details}")
 
     legacy_target_path = root / "configs/bench/paper_targets.yaml"
     legacy_target_absent = not legacy_target_path.exists()

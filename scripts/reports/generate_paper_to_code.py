@@ -15,12 +15,21 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return loaded
 
 
-def _render_markdown(data: dict[str, Any], source_path: str) -> str:
+def _render_markdown(
+    data: dict[str, Any],
+    source_path: str,
+    *,
+    generated_at_utc: str | None = None,
+) -> str:
     paper = str(data.get("paper", "unknown"))
     generated_by = str(data.get("generated_by", "unknown"))
     sections = data.get("sections", [])
     if not isinstance(sections, list):
         raise SystemExit("sections must be a list")
+
+    stamp = generated_at_utc
+    if stamp is None:
+        stamp = datetime.now(timezone.utc).isoformat()
 
     lines = [
         "# Paper to Code Mapping",
@@ -28,7 +37,7 @@ def _render_markdown(data: dict[str, Any], source_path: str) -> str:
         f"paper: {paper}",
         f"map_source: {source_path}",
         f"generated_by: {generated_by}",
-        f"generated_at_utc: {datetime.now(timezone.utc).isoformat()}",
+        f"generated_at_utc: {stamp}",
         "",
         "| Section | Mechanism | Paper Anchor | Code Paths | Status |",
         "|---|---|---|---|---|",
@@ -70,12 +79,22 @@ def main() -> None:
         default="docs/PAPER_TO_CODE.md",
         help="output markdown path",
     )
+    parser.add_argument(
+        "--generated-at-utc",
+        default="",
+        help="optional fixed UTC timestamp string for deterministic generation",
+    )
     args = parser.parse_args()
 
     map_path = Path(args.map_yaml)
     out_path = Path(args.out_md)
     data = _load_yaml(map_path)
-    markdown = _render_markdown(data, str(map_path))
+    generated_at_utc = args.generated_at_utc.strip() or None
+    markdown = _render_markdown(
+        data,
+        str(map_path),
+        generated_at_utc=generated_at_utc,
+    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(markdown)
     print(f"wrote {out_path}")
@@ -83,4 +102,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

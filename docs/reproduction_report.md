@@ -1,6 +1,6 @@
 # Engineering Reproduction Scaffold Report
 
-Date: 2026-03-04  
+Date: 2026-03-05  
 Target paper: *Memory Caching: RNNs with Growing Memory* (arXiv:2602.24281v1)
 
 ## Scope statement
@@ -46,3 +46,8 @@ This repository is currently an engineering scaffold focused on mechanism-level 
   - `validate_evidence_bundle` (full benchmark root),
   - `claim_evidence_lint: PASS`,
   - `release gate v1: PASS`.
+
+## Planner checklist status (2026-03-05)
+
+- In-scope planner checklist items for this execution tranche are complete.
+- Remaining items in the broader reproduction roadmap are explicitly outside this closed checklist scope (for example model-backed paper-metric parity work).

@@ -17,6 +17,9 @@ sections:
         code:
           - "src/memory_caching/layer.py"
           - "src/memory_caching/config.py"
+        symbols:
+          - "memory_caching.layer::MemoryCachingLayer"
+          - "memory_caching.config::MCConfig"
         status: "implemented"
   - name: "Aggregation strategies"
     items:
@@ -97,6 +100,7 @@ sections:
         code:
           - "tests/test_paper_equations.py"
           - "docs/IMPLEMENTATION_STATUS.md"
+        symbol_coverage_reason: "Test-and-doc mapping item; no single runtime module::symbol anchor."
         status: "implemented"
   - name: "Claims and release discipline"
     items:
@@ -106,4 +110,5 @@ sections:
           - "docs/CLAIM_BOUNDARY.md"
           - "docs/CLAIM_TO_EVIDENCE_MATRIX.md"
           - "scripts/checks/claim_evidence_lint.py"
+        symbol_coverage_reason: "Policy/docs mapping item; symbol linkage is not applicable."
         status: "implemented"

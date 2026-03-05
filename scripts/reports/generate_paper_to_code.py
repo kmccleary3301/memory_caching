@@ -39,10 +39,13 @@ def _render_markdown(
         f"generated_by: {generated_by}",
         f"generated_at_utc: {stamp}",
         "",
-        "| Section | Mechanism | Paper Anchor | Code Paths | Symbols | Status |",
+        "| Section | Mechanism | Paper Anchor | Code Paths | Symbols / Coverage | Status |",
         "|---|---|---|---|---|---|",
     ]
 
+    total_items = 0
+    with_symbols = 0
+    with_reason = 0
     for section in sections:
         if not isinstance(section, dict):
             continue
@@ -53,6 +56,7 @@ def _render_markdown(
         for item in items:
             if not isinstance(item, dict):
                 continue
+            total_items += 1
             mechanism = str(item.get("mechanism", ""))
             paper_anchor = str(item.get("paper_anchor", ""))
             status = str(item.get("status", ""))
@@ -62,13 +66,29 @@ def _render_markdown(
             symbols = item.get("symbols", [])
             if not isinstance(symbols, list):
                 symbols = []
+            symbol_reason = str(item.get("symbol_coverage_reason", "")).strip()
             code_cell = "<br>".join(str(p) for p in code_paths)
-            symbol_cell = "<br>".join(str(s) for s in symbols)
+            if len(symbols) > 0:
+                with_symbols += 1
+                symbol_cell = "<br>".join(str(s) for s in symbols)
+            else:
+                if symbol_reason:
+                    with_reason += 1
+                symbol_cell = symbol_reason
             lines.append(
                 f"| {section_name} | {mechanism} | {paper_anchor} | {code_cell} | {symbol_cell} | {status} |"
             )
 
-    return "\n".join(lines) + "\n"
+    missing_coverage = total_items - with_symbols - with_reason
+    summary_lines = [
+        "",
+        f"symbol_coverage_total_items: {total_items}",
+        f"symbol_coverage_items_with_symbols: {with_symbols}",
+        f"symbol_coverage_items_with_reason: {with_reason}",
+        f"symbol_coverage_items_missing: {missing_coverage}",
+        "",
+    ]
+    return "\n".join(lines + summary_lines) + "\n"
 
 
 def main() -> None:

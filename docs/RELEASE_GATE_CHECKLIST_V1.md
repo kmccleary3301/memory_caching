@@ -6,6 +6,7 @@
 - [ ] `./scripts/checks/phase2.sh`
 - [ ] `uv run python scripts/checks/config_name_lint.py`
 - [ ] `uv run python scripts/checks/paper_to_code_sync.py`
+- [ ] `./scripts/checks/install_smoke.sh`
 - [ ] `./scripts/checks/bench_smoke.sh`
 - [ ] `./scripts/checks/pipeline_smoke.sh`
 - [ ] `./scripts/checks/resume_consistency.sh`
@@ -24,6 +25,9 @@
 - [ ] `outputs/checks/phase3_summary.json`
 - [ ] `outputs/checks/phase4_summary.json`
 - [ ] `outputs/checks/resume_consistency.json`
+- [ ] `outputs/checks/install_smoke.json`
+- [ ] `outputs/checks/install_smoke_core_eval.json`
+- [ ] `outputs/checks/install_smoke_dev_eval.json`
 - [ ] `outputs/reports/phase3_benchmark_trend.json`
 - [ ] `outputs/reports/phase3_benchmark_trend.md`
 - [ ] `outputs/reports/phase3_parity_dashboard.json`
@@ -35,6 +39,15 @@
 - [ ] `outputs/independent_repro/<stamp>/manifest.json`
 - [ ] `outputs/reports/release_gate_v1.json`
 - [ ] `outputs/reports/quarantine_scan.json`
+
+Install smoke artifact schema:
+
+- `generated_at_utc`: UTC timestamp string.
+- `ok`: boolean.
+- `runs`: list with two entries (`core`, `dev`) and fields:
+  - `mode`
+  - `install_cmd`
+  - `eval_artifact`
 
 ## Blocking policy
 

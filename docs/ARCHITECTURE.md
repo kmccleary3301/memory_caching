@@ -1,5 +1,19 @@
 # Architecture
 
+## Documentation index
+
+- Claim boundaries:
+  - `docs/CLAIM_BOUNDARY.md`
+  - `docs/CLAIM_TO_EVIDENCE_MATRIX.md`
+- Reproduction/report status:
+  - `docs/reproduction_report.md`
+  - `docs/PROGRESS_LEDGER.md`
+- Gates/checklists:
+  - `docs/RELEASE_GATE_CHECKLIST_V1.md`
+  - `scripts/reports/release_gate_v1.py`
+  - `scripts/checks/claim_evidence_lint.py`
+  - `scripts/checks/paper_to_code_sync.py`
+
 ## Core flow
 
 1. Input tensor `x` is projected to `q/k/v/u`.

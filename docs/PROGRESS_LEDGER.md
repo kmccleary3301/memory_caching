@@ -41,6 +41,12 @@ Total: **100.00%**
   - `claim_evidence_lint: PASS`
   - `release gate v1: PASS`
 
+## Planner checklist closeout (2026-03-05)
+
+- Planner-derived P0/P1/P2 completion status: **100.0%**
+- Remaining in-scope planner items: **none**
+- Remaining blocked work is explicitly out-of-scope for this checklist (for example, model-backed paper-metric parity and Log-Linear++).
+
 ## Update rule
 
 1. Update each phase completion.

@@ -56,13 +56,17 @@ When to use:
 
 Torch/CUDA note:
 
-- Install a `torch` build compatible with your local CUDA runtime/driver stack before running CUDA workflows.
+- CPU-only example:
+  - `python -m pip install torch --index-url https://download.pytorch.org/whl/cpu`
+- CUDA example (for CUDA 12.1 builds):
+  - `python -m pip install torch --index-url https://download.pytorch.org/whl/cu121`
+- Install a `torch` build that matches your local CUDA runtime/driver stack before CUDA workflows.
 
 Install verification:
 
 ```bash
 mc list-variants
-uv run mc smoke-eval --backend linear --device cpu --warmup-steps 1
+mc smoke-eval --backend linear --device cpu --warmup-steps 1 --batch-size 1 --seq-len 8 --vocab-size 16 --d-model 8 --num-heads 2
 ```
 
 Debug trace example:
@@ -71,12 +75,19 @@ Debug trace example:
 uv run mc debug-layer --backend linear --aggregation grm --seq-len 8 --d-model 8 --num-heads 2 --out-json outputs/debug/debug_layer.json
 ```
 
+Onboarding acceptance criteria:
+
+- A new contributor should be able to complete the one-hour onboarding path and open a docs-only PR without changing internal scripts.
+- See `docs/CONTRIBUTOR_DRY_RUN.md` for the dry-run record and expected outcomes.
+
 ## Key docs
 
 - `docs/reproduction_report.md`
 - `docs/CONTRIBUTOR_ONBOARDING.md`
+- `docs/CONTRIBUTOR_DRY_RUN.md`
 - `docs/CONTRIBUTING.md`
 - `docs/ARCHITECTURE.md`
+- `docs/ENV_COMPAT_MATRIX.md`
 - `docs/CLAIM_TO_EVIDENCE_MATRIX.md`
 - `docs/CLAIM_BOUNDARY.md`
 - `docs/RELEASE_GATE_CHECKLIST_V1.md`

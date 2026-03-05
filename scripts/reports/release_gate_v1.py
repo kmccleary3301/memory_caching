@@ -29,6 +29,9 @@ def main() -> None:
         root / "outputs/checks/phase3_summary.json",
         root / "outputs/checks/phase4_summary.json",
         root / "outputs/checks/resume_consistency.json",
+        root / "outputs/checks/install_smoke.json",
+        root / "outputs/checks/install_smoke_core_eval.json",
+        root / "outputs/checks/install_smoke_dev_eval.json",
         root / "outputs/reports/phase3_benchmark_trend.json",
         root / "outputs/reports/phase3_parity_dashboard.json",
         root / "outputs/reports/phase3_stat_summary.json",
@@ -39,7 +42,9 @@ def main() -> None:
         root / "docs/reproduction_report.md",
         root / "docs/PROGRESS_LEDGER.md",
         root / "docs/CONTRIBUTING.md",
+        root / "docs/CONTRIBUTOR_DRY_RUN.md",
         root / "docs/ARCHITECTURE.md",
+        root / "docs/ENV_COMPAT_MATRIX.md",
         root / "docs/paper_to_code_map.yaml",
         root / "docs/PAPER_TO_CODE.md",
     ]
@@ -72,6 +77,25 @@ def main() -> None:
             stdout = (proc.stdout or "").strip()
             details = stderr if stderr else stdout
             errors.append(f"paper_to_code_sync failed: {details}")
+
+        proc = subprocess.run(
+            [
+                "python",
+                str(paper_to_code_check),
+                "--project-root",
+                str(root),
+                "--schema-only",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        ok = proc.returncode == 0
+        checks.append({"name": "paper_to_code_schema", "ok": ok})
+        if not ok:
+            stderr = (proc.stderr or "").strip()
+            stdout = (proc.stdout or "").strip()
+            details = stderr if stderr else stdout
+            errors.append(f"paper_to_code_schema failed: {details}")
 
     config_name_lint = root / "scripts/checks/config_name_lint.py"
     if config_name_lint.exists():
@@ -112,6 +136,28 @@ def main() -> None:
             stdout = (proc.stdout or "").strip()
             details = stderr if stderr else stdout
             errors.append(f"claim_evidence_lint failed: {details}")
+
+    install_smoke_path = root / "outputs/checks/install_smoke.json"
+    if install_smoke_path.exists():
+        install_smoke = _load_json(install_smoke_path)
+        if not bool(install_smoke.get("ok", False)):
+            errors.append(f"{install_smoke_path}: ok=false")
+        if not isinstance(install_smoke.get("generated_at_utc", None), str):
+            errors.append(f"{install_smoke_path}: generated_at_utc must be a string")
+        runs = install_smoke.get("runs", [])
+        if not isinstance(runs, list) or len(runs) != 2:
+            errors.append(f"{install_smoke_path}: runs must contain exactly two entries")
+        else:
+            modes = {str(r.get("mode", "")) for r in runs if isinstance(r, dict)}
+            if modes != {"core", "dev"}:
+                errors.append(f"{install_smoke_path}: runs modes must be core/dev, got {sorted(modes)}")
+            for run in runs:
+                if not isinstance(run, dict):
+                    errors.append(f"{install_smoke_path}: each run entry must be an object")
+                    continue
+                for key in ("mode", "install_cmd", "eval_artifact"):
+                    if key not in run:
+                        errors.append(f"{install_smoke_path}: run entry missing key '{key}'")
 
     legacy_target_path = root / "configs/bench/paper_targets.yaml"
     legacy_target_absent = not legacy_target_path.exists()

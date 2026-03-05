@@ -55,6 +55,43 @@ def _validate_mapped_paths(root: Path, data: dict[str, Any]) -> None:
         raise SystemExit("\n".join(errors))
 
 
+def _validate_schema(data: dict[str, Any]) -> None:
+    sections = data.get("sections", [])
+    if not isinstance(sections, list):
+        raise SystemExit("map yaml: sections must be a list")
+
+    errors: list[str] = []
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        section_name = str(section.get("name", "unknown"))
+        items = section.get("items", [])
+        if not isinstance(items, list):
+            errors.append(f"section '{section_name}' items must be a list")
+            continue
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            mechanism = str(item.get("mechanism", "unknown"))
+            symbols = item.get("symbols", [])
+            reason = str(item.get("symbol_coverage_reason", "")).strip()
+
+            has_symbols = isinstance(symbols, list) and len([s for s in symbols if str(s).strip()]) > 0
+            has_reason = len(reason) > 0
+
+            if not has_symbols and not has_reason:
+                errors.append(
+                    f"mechanism '{mechanism}' must include either non-empty symbols or symbol_coverage_reason"
+                )
+            if has_symbols and has_reason:
+                errors.append(
+                    f"mechanism '{mechanism}' should not define both symbols and symbol_coverage_reason"
+                )
+    if errors:
+        raise SystemExit("\n".join(errors))
+
+
 def _validate_optional_symbols(root: Path, data: dict[str, Any]) -> None:
     src_dir = root / "src"
     if str(src_dir) not in sys.path:
@@ -105,6 +142,11 @@ def _validate_optional_symbols(root: Path, data: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-root", default=".")
+    parser.add_argument(
+        "--schema-only",
+        action="store_true",
+        help="validate map schema/paths/symbols without markdown sync comparison",
+    )
     args = parser.parse_args()
 
     root = Path(args.project_root).resolve()
@@ -121,8 +163,12 @@ def main() -> None:
 
     current_md = paper_to_code_md.read_text()
     map_data = _load_map_yaml(map_yaml)
+    _validate_schema(map_data)
     _validate_mapped_paths(root, map_data)
     _validate_optional_symbols(root, map_data)
+    if args.schema_only:
+        print("paper_to_code_schema: PASS")
+        return
     generated_at = _extract_generated_at_utc(current_md)
 
     with tempfile.TemporaryDirectory(prefix="paper_to_code_sync_") as tmp_dir:

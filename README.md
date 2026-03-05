@@ -23,6 +23,7 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 - Phase3 reports include trend, smoke-target dashboard, statistical summary, and artifact checksums.
 - Default benchmark adapters are **rule-based compatibility adapters**; benchmark scores from these adapters are harness checks, not model-quality evidence.
 - Deep-memory backends (DLA/Titans) and SWLA(c=2) are reference implementations and are not yet validated against paper-reported training dynamics or metrics.
+- Titans convention note: paper-recursion faithfulness claims require `titans_update_convention="paper"`; `gradient_descent` is provided as an explicit alternative convention.
 
 ## Quickstart
 
@@ -48,10 +49,34 @@ python -m pip install -e ".[dev]"
 mc list-variants
 ```
 
+When to use:
+
+- Use `uv` for reproducible local development workflows in this repository.
+- Use `pip install -e .` / `pip install -e ".[dev]"` when integrating with an existing Python environment.
+
+Torch/CUDA note:
+
+- Install a `torch` build compatible with your local CUDA runtime/driver stack before running CUDA workflows.
+
+Install verification:
+
+```bash
+mc list-variants
+uv run mc smoke-eval --backend linear --device cpu --warmup-steps 1
+```
+
+Debug trace example:
+
+```bash
+uv run mc debug-layer --backend linear --aggregation grm --seq-len 8 --d-model 8 --num-heads 2 --out-json outputs/debug/debug_layer.json
+```
+
 ## Key docs
 
 - `docs/reproduction_report.md`
 - `docs/CONTRIBUTOR_ONBOARDING.md`
+- `docs/CONTRIBUTING.md`
+- `docs/ARCHITECTURE.md`
 - `docs/CLAIM_TO_EVIDENCE_MATRIX.md`
 - `docs/CLAIM_BOUNDARY.md`
 - `docs/RELEASE_GATE_CHECKLIST_V1.md`

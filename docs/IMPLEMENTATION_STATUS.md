@@ -15,6 +15,7 @@
 
 - Segmentation determinism and length decomposition.
 - MC causality and aggregation invariants.
+- Paper-equation analytic invariants (RM/GRM/Soup/SSC + segmentation decomposition).
 - Backend contract guards and negative-path validation.
 - DLA/Titans objective/update behavior and graph-mode checks.
 - SWLA recurrence and state-mixing equivalence checks.

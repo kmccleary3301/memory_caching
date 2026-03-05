@@ -39,8 +39,8 @@ def _render_markdown(
         f"generated_by: {generated_by}",
         f"generated_at_utc: {stamp}",
         "",
-        "| Section | Mechanism | Paper Anchor | Code Paths | Status |",
-        "|---|---|---|---|---|",
+        "| Section | Mechanism | Paper Anchor | Code Paths | Symbols | Status |",
+        "|---|---|---|---|---|---|",
     ]
 
     for section in sections:
@@ -59,9 +59,13 @@ def _render_markdown(
             code_paths = item.get("code", [])
             if not isinstance(code_paths, list):
                 code_paths = []
+            symbols = item.get("symbols", [])
+            if not isinstance(symbols, list):
+                symbols = []
             code_cell = "<br>".join(str(p) for p in code_paths)
+            symbol_cell = "<br>".join(str(s) for s in symbols)
             lines.append(
-                f"| {section_name} | {mechanism} | {paper_anchor} | {code_cell} | {status} |"
+                f"| {section_name} | {mechanism} | {paper_anchor} | {code_cell} | {symbol_cell} | {status} |"
             )
 
     return "\n".join(lines) + "\n"

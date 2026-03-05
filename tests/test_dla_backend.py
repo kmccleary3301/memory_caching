@@ -227,3 +227,31 @@ def test_dla_differentiable_mode_unrolls_across_steps() -> None:
 
     assert grad_k1 is not None
     assert grad_k1.abs().sum().item() > 0.0
+
+
+def test_dla_stopgrad_mode_blocks_temporal_gradient_flow() -> None:
+    torch.manual_seed(33)
+    backend = _make_backend(objective="l2", mode="stopgrad")
+    state = backend.init_state(
+        batch_size=1,
+        num_heads=1,
+        head_dim=4,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+    state = _randomize_state(state, seed=322)
+
+    k1 = torch.randn(1, 1, 4, requires_grad=True)
+    v1 = torch.randn(1, 1, 4)
+    k2 = torch.randn(1, 1, 4)
+    v2 = torch.randn(1, 1, 4)
+    q = torch.randn(1, 1, 4)
+
+    s1 = backend.update(state, k1, v1)
+    s2 = backend.update(s1, k2, v2)
+    loss = backend.apply(s2, q).sum()
+    if not loss.requires_grad:
+        return
+    grad_k1 = torch.autograd.grad(loss, k1, allow_unused=True)[0]
+
+    assert grad_k1 is None or grad_k1.abs().sum().item() == 0.0

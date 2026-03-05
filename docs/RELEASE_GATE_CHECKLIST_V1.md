@@ -4,6 +4,7 @@
 
 - [ ] `uv run python -m pytest -q`
 - [ ] `./scripts/checks/phase2.sh`
+- [ ] `uv run python scripts/checks/config_name_lint.py`
 - [ ] `uv run python scripts/checks/paper_to_code_sync.py`
 - [ ] `./scripts/checks/bench_smoke.sh`
 - [ ] `./scripts/checks/pipeline_smoke.sh`

@@ -12,6 +12,8 @@ DLAObjective = Literal["dot", "l2"]
 DLAInnerUpdateMode = Literal["stopgrad", "differentiable"]
 TitansObjective = Literal["l2", "dot"]
 TitansInnerUpdateMode = Literal["stopgrad", "differentiable"]
+# `paper` tracks the written recursion form; `gradient_descent` keeps explicit
+# descent-sign behavior for optimizer-style updates.
 TitansUpdateConvention = Literal["paper", "gradient_descent"]
 
 
@@ -44,6 +46,8 @@ class TitansConfig:
     step_size: float = 0.05
     momentum: float = 0.9
     retention_alpha: float = 1.0
+    # `paper`: S_t = beta * S_{t-1} - eta * grad_t
+    # `gradient_descent`: S_t = beta * S_{t-1} + eta * grad_t
     update_convention: TitansUpdateConvention = "paper"
 
     def __post_init__(self) -> None:

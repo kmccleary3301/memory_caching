@@ -3,6 +3,7 @@ set -euo pipefail
 
 mkdir -p outputs/smoke outputs/checks
 
+uv run python scripts/checks/config_name_lint.py
 uv run python -m pytest -q
 uv run python scripts/checks/paper_to_code_sync.py
 uv run mc smoke-eval --backend linear --device cpu --warmup-steps 2 --out-json outputs/smoke/phase2_linear_eval.json

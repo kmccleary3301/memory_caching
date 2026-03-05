@@ -20,6 +20,8 @@
   - `uv run python scripts/reports/stat_summary.py --root outputs/benchmarks/phase3_smoke --out-json outputs/reports/phase3_stat_summary.json --out-md outputs/reports/phase3_stat_summary.md`
 - Paper-to-code mapping sync check:
   - `uv run python scripts/checks/paper_to_code_sync.py`
+- Layer debug trace (per-token cached count + router weights):
+  - `uv run mc debug-layer --backend linear --aggregation grm --seq-len 8 --d-model 8 --num-heads 2 --out-json outputs/debug/debug_layer.json`
 - Paper-scale execution automation (strict full-corpus mode):
   - `LONG_BENCH_DATASET_FILE=/abs/path/longbench_full.jsonl RETRIEVAL_DATASET_FILE=/abs/path/retrieval_full.jsonl ./scripts/checks/paper_scale_execution.sh`
 - Paper-scale automation in subset dry-run mode:

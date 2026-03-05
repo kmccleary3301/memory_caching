@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import fields, is_dataclass
-from typing import Sequence
+from typing import Any, Sequence
 
 import torch
 import torch.nn as nn
@@ -288,6 +288,48 @@ class MemoryCachingLayer(nn.Module):
 
         raise ValueError(f"Unsupported aggregation variant: {self.config.aggregation}")
 
+    def _debug_router_weights(
+        self,
+        *,
+        u_t: Tensor,
+        cached: list[SegmentCache],
+        online_context: Tensor,
+    ) -> list[float]:
+        if self.config.aggregation == "residual":
+            return []
+
+        if self.config.aggregation in {"grm", "soup"}:
+            contexts = [c.seg_context for c in cached] + [online_context]
+            scores = self._context_scores(u_t, contexts)
+            weights = torch.softmax(scores, dim=-1)
+            return [float(x) for x in weights[0].mean(dim=0).detach().cpu().tolist()]
+
+        if self.config.aggregation == "ssc":
+            if len(cached) == 0:
+                return [1.0]
+            cached_contexts = [c.seg_context for c in cached]
+            cached_scores = self._context_scores(u_t, cached_contexts)
+
+            k = min(self.config.ssc_top_k, len(cached))
+            topk_indices = torch.topk(cached_scores, k=k, dim=-1).indices
+            mask = torch.zeros_like(cached_scores, dtype=torch.bool)
+            mask.scatter_(-1, topk_indices, True)
+
+            masked_cached_scores = cached_scores.masked_fill(~mask, float("-inf"))
+            online_scores = torch.einsum("bhd,bhd->bh", u_t, online_context)
+            if self.config.softmax_temperature != 1.0:
+                online_scores = online_scores / self.config.softmax_temperature
+            all_scores = torch.cat(
+                [masked_cached_scores, online_scores.unsqueeze(-1)], dim=-1
+            )
+            all_weights = torch.softmax(all_scores, dim=-1)
+            return [
+                float(x)
+                for x in all_weights[0].mean(dim=0).detach().cpu().tolist()
+            ]
+
+        return []
+
     def forward(
         self,
         x: Tensor,
@@ -297,7 +339,13 @@ class MemoryCachingLayer(nn.Module):
         attention_mask: Tensor | None = None,
         state_init_mode: StateInitMode | None = None,
         return_cache: bool = False,
-    ) -> Tensor | tuple[Tensor, list[SegmentCache]]:
+        return_debug: bool = False,
+    ) -> (
+        Tensor
+        | tuple[Tensor, list[SegmentCache]]
+        | tuple[Tensor, list[dict[str, Any]]]
+        | tuple[Tensor, list[SegmentCache], list[dict[str, Any]]]
+    ):
         if x.ndim != 3:
             raise ValueError("x must have shape [B, T, D]")
         if x.shape[-1] != self.config.d_model:
@@ -338,8 +386,9 @@ class MemoryCachingLayer(nn.Module):
         outputs = torch.empty_like(q)
         cached: list[SegmentCache] = []
         prev_final_state: object | None = None
+        debug_rows: list[dict[str, Any]] = []
 
-        for start, end in spans:
+        for seg_idx, (start, end) in enumerate(spans):
             if effective_init_mode == "checkpoint" and prev_final_state is not None:
                 online_state = prev_final_state
             elif effective_init_mode in {"checkpoint", "restart"}:
@@ -416,6 +465,17 @@ class MemoryCachingLayer(nn.Module):
 
                 if active_mask is not None and not bool(active_mask.any()):
                     outputs[:, t] = torch.zeros_like(q_t)
+                    if return_debug:
+                        debug_rows.append(
+                            {
+                                "token_index": t,
+                                "segment_index": seg_idx,
+                                "cached_count": len(cached),
+                                "aggregation": self.config.aggregation,
+                                "router_weights": [],
+                                "active_any": False,
+                            }
+                        )
                     continue
 
                 if active_mask is None or bool(active_mask.all()):
@@ -461,6 +521,21 @@ class MemoryCachingLayer(nn.Module):
                     dtype=x.dtype,
                 )
                 outputs[:, t] = out_t
+                if return_debug:
+                    debug_rows.append(
+                        {
+                            "token_index": t,
+                            "segment_index": seg_idx,
+                            "cached_count": len(cached),
+                            "aggregation": self.config.aggregation,
+                            "router_weights": self._debug_router_weights(
+                                u_t=u_t,
+                                cached=cached,
+                                online_context=online_context,
+                            ),
+                            "active_any": bool(active_mask.any()) if active_mask is not None else True,
+                        }
+                    )
 
             ensure_head_tensor(
                 "segment_context",
@@ -481,6 +556,10 @@ class MemoryCachingLayer(nn.Module):
             prev_final_state = online_state
 
         y = self.o_proj(self._merge_heads(outputs))
+        if return_cache and return_debug:
+            return y, cached, debug_rows
         if return_cache:
             return y, cached
+        if return_debug:
+            return y, debug_rows
         return y

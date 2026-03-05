@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
+import torch
 import typer
 
+from .backends.dla import DLABackend
+from .backends.linear import LinearMemoryBackend
+from .backends.swla import SWLABackend
+from .backends.titans import TitansBackend
 from .bench.adapters import (
     BenchmarkAdapter,
     DLAMCAdapter,
@@ -13,6 +19,8 @@ from .bench.adapters import (
 )
 from .bench.artifacts import create_bundle, write_artifacts
 from .bench.runner import get_runner, list_runners, run_mqar_suite, run_niah_suite
+from .config import DLAConfig, MCConfig, SWLAConfig, TitansConfig
+from .layer import MemoryCachingLayer
 from .segmentation import constant_segments, logarithmic_segments, spans_from_lengths
 from .smoke import run_smoke_eval, run_smoke_train
 
@@ -49,6 +57,28 @@ def _warn_if_rule_based(adapter_type: str) -> None:
             fg=typer.colors.YELLOW,
             err=True,
         )
+
+
+def _resolve_device(device: str) -> torch.device:
+    if device == "auto":
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
+    return torch.device(device)
+
+
+def _build_backend(config: MCConfig):
+    if config.backend == "linear":
+        return LinearMemoryBackend()
+    if config.backend == "dla":
+        return DLABackend(config.dla)
+    if config.backend == "titans":
+        return TitansBackend(config.titans)
+    if config.backend == "swla":
+        return SWLABackend(config.swla)
+    raise typer.BadParameter(f"unsupported backend: {config.backend}")
 
 
 @app.command()
@@ -232,6 +262,113 @@ def smoke_eval(
         out_json=out_json,
     )
     typer.echo(json.dumps(metrics, sort_keys=True, indent=2))
+
+
+@app.command("debug-layer")
+def debug_layer(
+    batch_size: int = typer.Option(1),
+    seq_len: int = typer.Option(8),
+    d_model: int = typer.Option(8),
+    num_heads: int = typer.Option(2),
+    backend: str = typer.Option("linear"),
+    aggregation: str = typer.Option("grm"),
+    segmentation: str = typer.Option("constant"),
+    segment_size: int = typer.Option(2),
+    state_init_mode: str = typer.Option("checkpoint"),
+    ssc_top_k: int = typer.Option(2),
+    use_q_as_u: bool = typer.Option(False),
+    softmax_temperature: float = typer.Option(1.0),
+    allow_output_mixture_fallback: bool = typer.Option(False),
+    dla_memory_width: int = typer.Option(8),
+    dla_memory_depth: int = typer.Option(2),
+    dla_objective: str = typer.Option("dot"),
+    dla_inner_update_mode: str = typer.Option("stopgrad"),
+    dla_step_size: float = typer.Option(0.05),
+    dla_momentum: float = typer.Option(0.0),
+    titans_memory_width: int = typer.Option(8),
+    titans_memory_depth: int = typer.Option(2),
+    titans_objective: str = typer.Option("l2"),
+    titans_inner_update_mode: str = typer.Option("stopgrad"),
+    titans_step_size: float = typer.Option(0.05),
+    titans_momentum: float = typer.Option(0.9),
+    titans_retention_alpha: float = typer.Option(1.0),
+    titans_update_convention: str = typer.Option("paper"),
+    swla_alpha: float = typer.Option(1.0),
+    swla_beta: float = typer.Option(0.0),
+    swla_lam: float = typer.Option(1.0),
+    seed: int = typer.Option(0),
+    device: str = typer.Option("auto"),
+    out_json: str | None = typer.Option(None),
+) -> None:
+    backend_kind = backend.strip().lower()
+    aggregation_kind = aggregation.strip().lower()
+    segmentation_kind = segmentation.strip().lower()
+    init_mode = state_init_mode.strip().lower()
+    if backend_kind not in {"linear", "dla", "titans", "swla"}:
+        raise typer.BadParameter("backend must be one of: linear, dla, titans, swla")
+    if aggregation_kind not in {"residual", "grm", "soup", "ssc"}:
+        raise typer.BadParameter("aggregation must be one of: residual, grm, soup, ssc")
+    if segmentation_kind not in {"constant", "logarithmic"}:
+        raise typer.BadParameter("segmentation must be one of: constant, logarithmic")
+    if init_mode not in {"checkpoint", "restart"}:
+        raise typer.BadParameter("state_init_mode must be one of: checkpoint, restart")
+
+    torch.manual_seed(seed)
+    resolved_device = _resolve_device(device)
+
+    config = MCConfig(
+        d_model=d_model,
+        num_heads=num_heads,
+        backend=backend_kind,  # type: ignore[arg-type]
+        aggregation=aggregation_kind,  # type: ignore[arg-type]
+        segmentation=segmentation_kind,  # type: ignore[arg-type]
+        segment_size=segment_size,
+        state_init_mode=init_mode,  # type: ignore[arg-type]
+        ssc_top_k=ssc_top_k,
+        use_q_as_u=use_q_as_u,
+        softmax_temperature=softmax_temperature,
+        allow_output_mixture_fallback=allow_output_mixture_fallback,
+        dla=DLAConfig(
+            memory_width=dla_memory_width,
+            memory_depth=dla_memory_depth,
+            objective=dla_objective,  # type: ignore[arg-type]
+            inner_update_mode=dla_inner_update_mode,  # type: ignore[arg-type]
+            step_size=dla_step_size,
+            momentum=dla_momentum,
+        ),
+        titans=TitansConfig(
+            memory_width=titans_memory_width,
+            memory_depth=titans_memory_depth,
+            objective=titans_objective,  # type: ignore[arg-type]
+            inner_update_mode=titans_inner_update_mode,  # type: ignore[arg-type]
+            step_size=titans_step_size,
+            momentum=titans_momentum,
+            retention_alpha=titans_retention_alpha,
+            update_convention=titans_update_convention,  # type: ignore[arg-type]
+        ),
+        swla=SWLAConfig(alpha=swla_alpha, beta=swla_beta, lam=swla_lam),
+    )
+
+    layer = MemoryCachingLayer(config=config, backend=_build_backend(config)).to(resolved_device)
+    x = torch.randn(batch_size, seq_len, d_model, device=resolved_device)
+    _, debug_rows = layer(x, return_debug=True)
+
+    payload = {
+        "mode": "debug_layer",
+        "device": str(resolved_device),
+        "backend": backend_kind,
+        "aggregation": aggregation_kind,
+        "batch_size": batch_size,
+        "seq_len": seq_len,
+        "d_model": d_model,
+        "num_heads": num_heads,
+        "rows": debug_rows,
+    }
+    if out_json is not None:
+        path = Path(out_json)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, sort_keys=True, indent=2) + "\n")
+    typer.echo(json.dumps(payload, sort_keys=True, indent=2))
 
 
 @bench_app.command("list")

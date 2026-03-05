@@ -8,6 +8,9 @@ sections:
         code:
           - "src/memory_caching/segmentation.py"
           - "src/memory_caching/layer.py"
+        symbols:
+          - "memory_caching.segmentation::logarithmic_segments"
+          - "memory_caching.layer::MemoryCachingLayer"
         status: "implemented"
       - mechanism: "Checkpoint vs restart segment initialization"
         paper_anchor: "Checkpoint vs independent compressor discussion"
@@ -22,24 +25,36 @@ sections:
         code:
           - "src/memory_caching/layer.py"
           - "tests/test_layer.py"
+          - "tests/test_paper_equations.py"
+        symbols:
+          - "memory_caching.layer::MemoryCachingLayer"
         status: "implemented"
       - mechanism: "Gated Residual Memory (GRM)"
         paper_anchor: "GRM equation and gamma weighting"
         code:
           - "src/memory_caching/layer.py"
           - "tests/test_layer.py"
+          - "tests/test_paper_equations.py"
+        symbols:
+          - "memory_caching.layer::MemoryCachingLayer"
         status: "implemented"
       - mechanism: "Memory Soup"
         paper_anchor: "Soup definition"
         code:
           - "src/memory_caching/layer.py"
           - "tests/test_layer.py"
+          - "tests/test_paper_equations.py"
+        symbols:
+          - "memory_caching.layer::MemoryCachingLayer"
         status: "implemented_with_caveat"
       - mechanism: "Sparse Selective Caching (SSC)"
         paper_anchor: "SSC top-k selective routing"
         code:
           - "src/memory_caching/layer.py"
           - "tests/test_layer.py"
+          - "tests/test_paper_equations.py"
+        symbols:
+          - "memory_caching.layer::MemoryCachingLayer"
         status: "implemented"
   - name: "Backends"
     items:
@@ -48,18 +63,25 @@ sections:
         code:
           - "src/memory_caching/backends/linear.py"
           - "tests/test_linear_backend.py"
+        symbols:
+          - "memory_caching.backends.linear::LinearMemoryBackend"
         status: "implemented"
       - mechanism: "DLA backend"
         paper_anchor: "DLA equations"
         code:
           - "src/memory_caching/backends/dla.py"
           - "tests/test_dla_backend.py"
+        symbols:
+          - "memory_caching.backends.dla::DLABackend"
         status: "implemented_with_caveat"
       - mechanism: "Titans backend"
         paper_anchor: "Titans equations"
         code:
           - "src/memory_caching/backends/titans.py"
           - "tests/test_titans_backend.py"
+          - "tests/test_titans_update_convention.py"
+        symbols:
+          - "memory_caching.backends.titans::TitansBackend"
         status: "implemented_with_caveat"
       - mechanism: "SWLA c=2 backend"
         paper_anchor: "SWLA recurrence/retrieval"
@@ -67,7 +89,15 @@ sections:
           - "src/memory_caching/backends/swla.py"
           - "tests/test_swla_backend.py"
           - "tests/test_layer.py"
+        symbols:
+          - "memory_caching.backends.swla::SWLABackend"
         status: "implemented_with_caveat"
+      - mechanism: "Paper-equation analytic invariants"
+        paper_anchor: "RM/GRM/Soup/SSC formula-level checks"
+        code:
+          - "tests/test_paper_equations.py"
+          - "docs/IMPLEMENTATION_STATUS.md"
+        status: "implemented"
   - name: "Claims and release discipline"
     items:
       - mechanism: "Claim boundary and blocked-claim policy"

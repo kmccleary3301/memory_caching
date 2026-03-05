@@ -1,6 +1,6 @@
 # Progress Ledger
 
-Date: 2026-03-03
+Date: 2026-03-05
 
 ## Weight model
 
@@ -32,6 +32,14 @@ Overall =
 - 0.05 * 1.00
 
 Total: **100.00%**
+
+## Latest milestone update (2026-03-05)
+
+- Full paper-scale execution script completed on CUDA for `pilot_full`, `mid_full`, and `target_full`.
+- Full benchmark/report chain completed (NIAH, MQAR, LongBench, retrieval).
+- Final integrity and release checks passed:
+  - `claim_evidence_lint: PASS`
+  - `release gate v1: PASS`
 
 ## Update rule
 

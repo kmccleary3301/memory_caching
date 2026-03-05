@@ -33,3 +33,16 @@ This repository is currently an engineering scaffold focused on mechanism-level 
 - Any benchmark run produced with default rule-based adapters is harness validation, not model-quality evidence.
 - Smoke-target dashboards are calibration checks against repository-defined targets, not paper-reported targets.
 - Paper-scale claims remain blocked until model-backed full-corpus runs are complete.
+
+## Latest execution evidence (2026-03-05)
+
+- Full `paper_scale_execution.sh` run completed on CUDA through:
+  - `pilot_full` (1000 steps),
+  - `mid_full` (5000 steps),
+  - `target_full` (10000 steps).
+- Periodic eval hooks completed for each final checkpoint.
+- NIAH, MQAR, LongBench, and retrieval benchmark suites were executed in full-dataset mode.
+- Evidence bundles and release gates passed:
+  - `validate_evidence_bundle` (full benchmark root),
+  - `claim_evidence_lint: PASS`,
+  - `release gate v1: PASS`.

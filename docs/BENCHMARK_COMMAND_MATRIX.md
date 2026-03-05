@@ -15,7 +15,7 @@
 - Sweep orchestration (timeout/retry/resume):
   - `uv run python scripts/bench/run_benchmark_sweep.py --root outputs/benchmarks/sweeps/default --retries 1 --timeout-sec 1800`
 - Phase3 parity dashboard generation:
-  - `uv run python scripts/reports/parity_dashboard.py --trend-json outputs/reports/phase3_benchmark_trend.json --targets-yaml configs/bench/paper_targets.yaml --out-md outputs/reports/phase3_parity_dashboard.md --out-json outputs/reports/phase3_parity_dashboard.json`
+  - `uv run python scripts/reports/parity_dashboard.py --trend-json outputs/reports/phase3_benchmark_trend.json --targets-yaml configs/bench/smoke_targets.yaml --out-md outputs/reports/phase3_parity_dashboard.md --out-json outputs/reports/phase3_parity_dashboard.json`
 - Phase3 statistical summary generation:
   - `uv run python scripts/reports/stat_summary.py --root outputs/benchmarks/phase3_smoke --out-json outputs/reports/phase3_stat_summary.json --out-md outputs/reports/phase3_stat_summary.md`
 - Paper-scale execution automation (strict full-corpus mode):

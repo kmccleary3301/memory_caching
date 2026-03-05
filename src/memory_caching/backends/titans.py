@@ -25,7 +25,10 @@ class TitansBackend:
 
     Update sketch:
       grad_t = ∇L(M_{t-1}; k_t, v_t)
-      S_t = beta * S_{t-1} + eta * grad_t
+      if update_convention == "paper":
+          S_t = beta * S_{t-1} - eta * grad_t
+      else:  # "gradient_descent"
+          S_t = beta * S_{t-1} + eta * grad_t
       M_t = alpha * M_{t-1} - S_t
     """
 
@@ -95,17 +98,31 @@ class TitansBackend:
 
     def _loss(self, pred: Tensor, target: Tensor) -> Tensor:
         if self.config.objective == "l2":
-            return ((pred - target) ** 2).mean()
+            # Per-memory-state objective; summing over (B,H) keeps update
+            # magnitude invariant to batch/head replication.
+            return ((pred - target) ** 2).sum(dim=-1).sum()
         if self.config.objective == "dot":
-            return -(pred * target).sum(dim=-1).mean()
+            # Per-memory-state objective; summing over (B,H) keeps update
+            # magnitude invariant to batch/head replication.
+            return -(pred * target).sum(dim=-1).sum()
         raise ValueError(f"unsupported titans objective: {self.config.objective}")
 
     def update(self, state: TitansState, k_t: Tensor, v_t: Tensor) -> TitansState:
         requires_graph = self.config.inner_update_mode == "differentiable"
 
         with torch.enable_grad():
-            w_vars = [w.detach().requires_grad_(True) for w in state.weights]
-            b_vars = [b.detach().requires_grad_(True) for b in state.biases]
+            if requires_graph:
+                w_vars = [
+                    w if w.requires_grad else w.requires_grad_(True)
+                    for w in state.weights
+                ]
+                b_vars = [
+                    b if b.requires_grad else b.requires_grad_(True)
+                    for b in state.biases
+                ]
+            else:
+                w_vars = [w.detach().requires_grad_(True) for w in state.weights]
+                b_vars = [b.detach().requires_grad_(True) for b in state.biases]
             tmp_state = TitansState(weights=tuple(w_vars), biases=tuple(b_vars))
             pred = self.apply(tmp_state, k_t)
             loss = self._loss(pred, v_t)
@@ -135,8 +152,12 @@ class TitansBackend:
             prev_sw = state.s_w[i] if has_s else torch.zeros_like(w)
             prev_sb = state.s_b[i] if has_s else torch.zeros_like(b)
 
-            s_w_t = beta * prev_sw + eta * gw
-            s_b_t = beta * prev_sb + eta * gb
+            if self.config.update_convention == "paper":
+                s_w_t = beta * prev_sw - eta * gw
+                s_b_t = beta * prev_sb - eta * gb
+            else:
+                s_w_t = beta * prev_sw + eta * gw
+                s_b_t = beta * prev_sb + eta * gb
 
             next_w = alpha * w - s_w_t
             next_b = alpha * b - s_b_t

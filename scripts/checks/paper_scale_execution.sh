@@ -9,6 +9,7 @@ USE_AMP=${USE_AMP:-1}
 USE_COMPILE=${USE_COMPILE:-1}
 COMPILE_MODE=${COMPILE_MODE:-max-autotune}
 MATMUL_PRECISION=${MATMUL_PRECISION:-high}
+DRY_RUN=${DRY_RUN:-0}
 
 TRAIN_DATA_DIR=${TRAIN_DATA_DIR:-data/processed}
 OPTIM_CONFIG=${OPTIM_CONFIG:-configs/optim/schedules.yaml}
@@ -29,6 +30,43 @@ RETRIEVAL_SAMPLES_PER_DATASET=${RETRIEVAL_SAMPLES_PER_DATASET:-128}
 LONG_BENCH_DATASET_FILE=${LONG_BENCH_DATASET_FILE:-}
 RETRIEVAL_DATASET_FILE=${RETRIEVAL_DATASET_FILE:-}
 ALLOW_SUBSET=${ALLOW_SUBSET:-0}
+PILOT_PROFILE=${PILOT_PROFILE:-pilot_full}
+MID_PROFILE=${MID_PROFILE:-mid_full}
+TARGET_PROFILE=${TARGET_PROFILE:-target_full}
+PILOT_MAX_STEPS=${PILOT_MAX_STEPS:-1000}
+MID_MAX_STEPS=${MID_MAX_STEPS:-5000}
+TARGET_MAX_STEPS=${TARGET_MAX_STEPS:-10000}
+PILOT_MAX_SEQ_LEN=${PILOT_MAX_SEQ_LEN:-4096}
+MID_MAX_SEQ_LEN=${MID_MAX_SEQ_LEN:-8192}
+TARGET_MAX_SEQ_LEN=${TARGET_MAX_SEQ_LEN:-16384}
+TRAIN_PARITY_JSON=${TRAIN_PARITY_JSON:-outputs/reports/training_parity_table_full.json}
+TRAIN_PARITY_MD=${TRAIN_PARITY_MD:-docs/TRAINING_PARITY_TABLE_FULL.md}
+REPORT_SUFFIX=${REPORT_SUFFIX:-}
+
+if [[ "${DRY_RUN}" == "1" ]]; then
+  BENCH_ROOT=${BENCH_ROOT:-outputs/benchmarks/full_dataset_dryrun}
+  PILOT_PROFILE=${PILOT_PROFILE:-pilot_dryrun}
+  MID_PROFILE=${MID_PROFILE:-mid_dryrun}
+  TARGET_PROFILE=${TARGET_PROFILE:-target_dryrun}
+  PILOT_MAX_STEPS=${PILOT_MAX_STEPS:-2}
+  MID_MAX_STEPS=${MID_MAX_STEPS:-2}
+  TARGET_MAX_STEPS=${TARGET_MAX_STEPS:-2}
+  PILOT_MAX_SEQ_LEN=${PILOT_MAX_SEQ_LEN:-256}
+  MID_MAX_SEQ_LEN=${MID_MAX_SEQ_LEN:-256}
+  TARGET_MAX_SEQ_LEN=${TARGET_MAX_SEQ_LEN:-256}
+  NIAH_CONTEXT_LENGTHS=${NIAH_CONTEXT_LENGTHS:-4096,8192}
+  NIAH_SAMPLES_PER_LENGTH=${NIAH_SAMPLES_PER_LENGTH:-4}
+  MQAR_SAMPLES=${MQAR_SAMPLES:-16}
+  MQAR_PAIR_GRID=${MQAR_PAIR_GRID:-8,16}
+  LONG_BENCH_SAMPLES_PER_TASK=${LONG_BENCH_SAMPLES_PER_TASK:-2}
+  RETRIEVAL_TRUNCATION_LENGTHS=${RETRIEVAL_TRUNCATION_LENGTHS:-64}
+  RETRIEVAL_SAMPLES_PER_DATASET=${RETRIEVAL_SAMPLES_PER_DATASET:-2}
+  USE_COMPILE=${USE_COMPILE:-0}
+  USE_AMP=${USE_AMP:-0}
+  TRAIN_PARITY_JSON=${TRAIN_PARITY_JSON:-outputs/reports/training_parity_table_full_dryrun.json}
+  TRAIN_PARITY_MD=${TRAIN_PARITY_MD:-outputs/reports/TRAINING_PARITY_TABLE_FULL_DRYRUN.md}
+  REPORT_SUFFIX=${REPORT_SUFFIX:-_dryrun}
+fi
 
 if [[ -z "${LONG_BENCH_DATASET_FILE}" ]]; then
   echo "LONG_BENCH_DATASET_FILE must be set" >&2
@@ -83,21 +121,28 @@ run_train_profile() {
   cp artifacts/train_manifest.json "outputs/reports/training_telemetry/${profile_name}_train_manifest.json"
 }
 
-run_train_profile "pilot_full" "configs/train/pilot.yaml" "1000" "4096"
-uv run python scripts/eval/periodic_eval.py --checkpoint artifacts/checkpoints/pilot_full/step_001000.pt --runner niah --out-json outputs/eval/pilot_full_periodic_eval.json
+step_tag() {
+  printf "%06d" "$1"
+}
 
-run_train_profile "mid_full" "configs/train/mid.yaml" "5000" "8192"
-uv run python scripts/eval/periodic_eval.py --checkpoint artifacts/checkpoints/mid_full/step_005000.pt --runner niah --out-json outputs/eval/mid_full_periodic_eval.json
+run_train_profile "${PILOT_PROFILE}" "configs/train/pilot.yaml" "${PILOT_MAX_STEPS}" "${PILOT_MAX_SEQ_LEN}"
+PILOT_STEP_TAG="$(step_tag "${PILOT_MAX_STEPS}")"
+uv run python scripts/eval/periodic_eval.py --checkpoint "artifacts/checkpoints/${PILOT_PROFILE}/step_${PILOT_STEP_TAG}.pt" --runner niah --out-json "outputs/eval/${PILOT_PROFILE}_periodic_eval.json"
 
-run_train_profile "target_full" "configs/train/target.yaml" "10000" "16384"
-uv run python scripts/eval/periodic_eval.py --checkpoint artifacts/checkpoints/target_full/step_010000.pt --runner niah --out-json outputs/eval/target_full_periodic_eval.json
+run_train_profile "${MID_PROFILE}" "configs/train/mid.yaml" "${MID_MAX_STEPS}" "${MID_MAX_SEQ_LEN}"
+MID_STEP_TAG="$(step_tag "${MID_MAX_STEPS}")"
+uv run python scripts/eval/periodic_eval.py --checkpoint "artifacts/checkpoints/${MID_PROFILE}/step_${MID_STEP_TAG}.pt" --runner niah --out-json "outputs/eval/${MID_PROFILE}_periodic_eval.json"
+
+run_train_profile "${TARGET_PROFILE}" "configs/train/target.yaml" "${TARGET_MAX_STEPS}" "${TARGET_MAX_SEQ_LEN}"
+TARGET_STEP_TAG="$(step_tag "${TARGET_MAX_STEPS}")"
+uv run python scripts/eval/periodic_eval.py --checkpoint "artifacts/checkpoints/${TARGET_PROFILE}/step_${TARGET_STEP_TAG}.pt" --runner niah --out-json "outputs/eval/${TARGET_PROFILE}_periodic_eval.json"
 
 uv run python scripts/reports/training_parity_table.py \
   --targets-yaml configs/train/paper_targets_full.yaml \
   --checkpoints-root artifacts/checkpoints \
   --eval-root outputs/eval \
-  --out-json outputs/reports/training_parity_table_full.json \
-  --out-md docs/TRAINING_PARITY_TABLE_FULL.md
+  --out-json "${TRAIN_PARITY_JSON}" \
+  --out-md "${TRAIN_PARITY_MD}"
 
 uv run mc bench niah \
   --adapter all \
@@ -135,28 +180,28 @@ uv run mc bench retrieval \
 uv run python scripts/reports/validate_evidence_bundle.py --root "${BENCH_ROOT}"
 uv run python scripts/reports/benchmark_trend.py \
   --root "${BENCH_ROOT}" \
-  --out-json outputs/reports/full_dataset_benchmark_trend.json \
-  --out-md outputs/reports/full_dataset_benchmark_trend.md
+  --out-json "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.json" \
+  --out-md "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.md"
 uv run python scripts/reports/parity_dashboard.py \
-  --trend-json outputs/reports/full_dataset_benchmark_trend.json \
-  --targets-yaml configs/bench/paper_targets.yaml \
-  --out-json outputs/reports/full_dataset_parity_dashboard.json \
-  --out-md outputs/reports/full_dataset_parity_dashboard.md
+  --trend-json "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.json" \
+  --targets-yaml configs/bench/smoke_targets.yaml \
+  --out-json "outputs/reports/full_dataset_parity_dashboard${REPORT_SUFFIX}.json" \
+  --out-md "outputs/reports/full_dataset_parity_dashboard${REPORT_SUFFIX}.md"
 uv run python scripts/reports/stat_summary.py \
   --root "${BENCH_ROOT}" \
-  --out-json outputs/reports/full_dataset_stat_summary.json \
-  --out-md outputs/reports/full_dataset_stat_summary.md
+  --out-json "outputs/reports/full_dataset_stat_summary${REPORT_SUFFIX}.json" \
+  --out-md "outputs/reports/full_dataset_stat_summary${REPORT_SUFFIX}.md"
 uv run python scripts/reports/artifact_checksums.py \
   --path "${BENCH_ROOT}" \
-  --path outputs/reports/full_dataset_benchmark_trend.json \
-  --path outputs/reports/full_dataset_parity_dashboard.json \
-  --path outputs/reports/full_dataset_stat_summary.json \
-  --out outputs/reports/full_dataset_artifact_checksums.json
+  --path "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.json" \
+  --path "outputs/reports/full_dataset_parity_dashboard${REPORT_SUFFIX}.json" \
+  --path "outputs/reports/full_dataset_stat_summary${REPORT_SUFFIX}.json" \
+  --out "outputs/reports/full_dataset_artifact_checksums${REPORT_SUFFIX}.json"
 
 uv run python scripts/reports/write_phase_summary.py \
-  --phase phase3_full_dataset \
-  --out outputs/checks/phase3_full_dataset_summary.json \
-  --input outputs/reports/full_dataset_benchmark_trend.json \
-  --input outputs/reports/full_dataset_parity_dashboard.json \
-  --input outputs/reports/full_dataset_stat_summary.json \
-  --input outputs/reports/full_dataset_artifact_checksums.json
+  --phase "phase3_full_dataset${REPORT_SUFFIX}" \
+  --out "outputs/checks/phase3_full_dataset${REPORT_SUFFIX}_summary.json" \
+  --input "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.json" \
+  --input "outputs/reports/full_dataset_parity_dashboard${REPORT_SUFFIX}.json" \
+  --input "outputs/reports/full_dataset_stat_summary${REPORT_SUFFIX}.json" \
+  --input "outputs/reports/full_dataset_artifact_checksums${REPORT_SUFFIX}.json"

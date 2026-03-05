@@ -3,7 +3,8 @@ from __future__ import annotations
 import torch
 
 from memory_caching.backends.linear import LinearMemoryBackend
-from memory_caching.config import MCConfig
+from memory_caching.backends.swla import SWLABackend
+from memory_caching.config import MCConfig, SWLAConfig
 from memory_caching.layer import MemoryCachingLayer
 
 
@@ -33,6 +34,7 @@ def _make_layer(
     segmentation: str = "constant",
     state_init_mode: str = "checkpoint",
     ssc_top_k: int = 1,
+    allow_output_mixture_fallback: bool = False,
     backend: object | None = None,
 ) -> MemoryCachingLayer:
     config = MCConfig(
@@ -43,6 +45,7 @@ def _make_layer(
         segment_size=segment_size,
         state_init_mode=state_init_mode,
         ssc_top_k=ssc_top_k,
+        allow_output_mixture_fallback=allow_output_mixture_fallback,
     )
     layer = MemoryCachingLayer(
         config=config,
@@ -110,17 +113,81 @@ def test_linear_memory_grm_and_soup_outputs_match() -> None:
     assert torch.allclose(y_grm, y_soup, atol=1e-6)
 
 
+def test_swla_memory_grm_and_soup_outputs_match() -> None:
+    torch.manual_seed(12)
+    swla_cfg = SWLAConfig(alpha=0.9, beta=0.1, lam=1.0)
+    grm = MemoryCachingLayer(
+        config=MCConfig(
+            d_model=8,
+            num_heads=2,
+            backend="swla",
+            aggregation="grm",
+            segment_size=2,
+            swla=swla_cfg,
+        ),
+        backend=SWLABackend(swla_cfg),
+    )
+    soup = MemoryCachingLayer(
+        config=MCConfig(
+            d_model=8,
+            num_heads=2,
+            backend="swla",
+            aggregation="soup",
+            segment_size=2,
+            swla=swla_cfg,
+        ),
+        backend=SWLABackend(swla_cfg),
+    )
+    _set_identity_projections(grm)
+    _set_identity_projections(soup)
+    soup.load_state_dict(grm.state_dict())
+
+    x = torch.randn(2, 8, 8)
+    y_grm = grm(x)
+    y_soup = soup(x)
+
+    assert torch.allclose(y_grm, y_soup, atol=1e-6)
+
+
 def test_soup_fallback_without_mixable_backend_matches_grm() -> None:
     torch.manual_seed(42)
     backend = DummyNoMixBackend()
-    grm = _make_layer(aggregation="grm", segment_size=2, backend=backend)
-    soup = _make_layer(aggregation="soup", segment_size=2, backend=backend)
+    grm = _make_layer(
+        aggregation="grm",
+        segment_size=2,
+        allow_output_mixture_fallback=True,
+        backend=backend,
+    )
+    soup = _make_layer(
+        aggregation="soup",
+        segment_size=2,
+        allow_output_mixture_fallback=True,
+        backend=backend,
+    )
     soup.load_state_dict(grm.state_dict())
 
     x = torch.randn(2, 8, 8)
     y_grm = grm(x)
     y_soup = soup(x)
     assert torch.allclose(y_grm, y_soup, atol=1e-6)
+
+
+def test_soup_without_mixable_backend_raises_without_fallback_flag() -> None:
+    torch.manual_seed(43)
+    backend = DummyNoMixBackend()
+    soup = _make_layer(
+        aggregation="soup",
+        segment_size=2,
+        allow_output_mixture_fallback=False,
+        backend=backend,
+    )
+    x = torch.randn(1, 4, 8)
+    try:
+        soup(x)
+    except ValueError as exc:
+        assert "allow_output_mixture_fallback" in str(exc)
+    else:
+        raise AssertionError("expected ValueError for non-mixable soup without fallback")
 
 
 def test_single_segment_residual_equals_grm() -> None:
@@ -189,3 +256,16 @@ def test_ssc_single_segment_matches_grm() -> None:
 
     x = torch.randn(2, 8, 8)
     assert torch.allclose(ssc(x), grm(x), atol=1e-6)
+
+
+def test_attention_mask_blocks_updates_and_zeros_masked_positions() -> None:
+    torch.manual_seed(21)
+    layer = _make_layer(aggregation="grm", segment_size=2)
+    x = torch.randn(1, 6, 8)
+
+    attention_mask = torch.tensor([[1, 1, 1, 0, 0, 0]], dtype=torch.bool)
+    y_masked = layer(x, attention_mask=attention_mask)
+    y_prefix = layer(x[:, :3, :])
+
+    assert torch.allclose(y_masked[:, :3, :], y_prefix, atol=1e-6)
+    assert torch.allclose(y_masked[:, 3:, :], torch.zeros_like(y_masked[:, 3:, :]), atol=1e-6)

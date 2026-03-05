@@ -80,6 +80,7 @@ def test_soup_fallback_matches_grm_for_nonmixable_backend() -> None:
         aggregation="soup",
         segment_size=2,
         state_init_mode="checkpoint",
+        allow_output_mixture_fallback=True,
     )
     cfg_grm = MCConfig(
         d_model=8,

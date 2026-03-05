@@ -4,7 +4,13 @@ import json
 
 import typer
 
-from .bench.adapters import DLAMCAdapter, LinearMCAdapter, TitansMCAdapter
+from .bench.adapters import (
+    BenchmarkAdapter,
+    DLAMCAdapter,
+    LinearMCAdapter,
+    ModelBackedAdapter,
+    TitansMCAdapter,
+)
 from .bench.artifacts import create_bundle, write_artifacts
 from .bench.runner import get_runner, list_runners, run_mqar_suite, run_niah_suite
 from .segmentation import constant_segments, logarithmic_segments, spans_from_lengths
@@ -30,6 +36,21 @@ def _select_adapters(which: str):
     raise typer.BadParameter("adapter must be one of: linear, dla, titans, both, all")
 
 
+def _adapter_type(adapters: list[BenchmarkAdapter]) -> str:
+    if adapters and all(isinstance(adapter, ModelBackedAdapter) for adapter in adapters):
+        return "model_backed"
+    return "rule_based"
+
+
+def _warn_if_rule_based(adapter_type: str) -> None:
+    if adapter_type == "rule_based":
+        typer.secho(
+            "WARNING: benchmark adapters are rule-based compatibility adapters, not model-backed evaluators.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+
+
 @app.command()
 def status() -> None:
     typer.echo("memory_caching: m70 execution in progress")
@@ -37,7 +58,7 @@ def status() -> None:
 
 @app.command("list-variants")
 def list_variants() -> None:
-    typer.echo("backend: linear, dla, titans")
+    typer.echo("backend: linear, dla, titans, swla")
     typer.echo("aggregation: residual, grm, soup, ssc")
     typer.echo("segmentation: constant, logarithmic")
     typer.echo("state_init_mode: checkpoint, restart")
@@ -87,6 +108,10 @@ def smoke_train(
     titans_step_size: float = typer.Option(0.05),
     titans_momentum: float = typer.Option(0.9),
     titans_retention_alpha: float = typer.Option(1.0),
+    titans_update_convention: str = typer.Option("paper"),
+    swla_alpha: float = typer.Option(1.0),
+    swla_beta: float = typer.Option(0.0),
+    swla_lam: float = typer.Option(1.0),
     segment_size: int = typer.Option(16),
     aggregation: str = typer.Option("grm"),
     segmentation: str = typer.Option("constant"),
@@ -118,6 +143,10 @@ def smoke_train(
         titans_step_size=titans_step_size,
         titans_momentum=titans_momentum,
         titans_retention_alpha=titans_retention_alpha,
+        titans_update_convention=titans_update_convention,
+        swla_alpha=swla_alpha,
+        swla_beta=swla_beta,
+        swla_lam=swla_lam,
         segment_size=segment_size,
         aggregation=aggregation,
         segmentation=segmentation,
@@ -153,6 +182,10 @@ def smoke_eval(
     titans_step_size: float = typer.Option(0.05),
     titans_momentum: float = typer.Option(0.9),
     titans_retention_alpha: float = typer.Option(1.0),
+    titans_update_convention: str = typer.Option("paper"),
+    swla_alpha: float = typer.Option(1.0),
+    swla_beta: float = typer.Option(0.0),
+    swla_lam: float = typer.Option(1.0),
     segment_size: int = typer.Option(16),
     aggregation: str = typer.Option("grm"),
     segmentation: str = typer.Option("constant"),
@@ -184,6 +217,10 @@ def smoke_eval(
         titans_step_size=titans_step_size,
         titans_momentum=titans_momentum,
         titans_retention_alpha=titans_retention_alpha,
+        titans_update_convention=titans_update_convention,
+        swla_alpha=swla_alpha,
+        swla_beta=swla_beta,
+        swla_lam=swla_lam,
         segment_size=segment_size,
         aggregation=aggregation,
         segmentation=segmentation,
@@ -213,6 +250,8 @@ def bench_niah(
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
+    adapter_type = _adapter_type(adapters)
+    _warn_if_rule_based(adapter_type)
     task_list = [t.strip() for t in tasks.split(",") if t.strip()]
     lengths = [int(x.strip()) for x in context_lengths.split(",") if x.strip()]
 
@@ -224,6 +263,7 @@ def bench_niah(
         seed=seed,
         position_mode=position_mode,
     )
+    result = {**result, "adapter_type": adapter_type}
 
     bundle = create_bundle(out_dir)
     write_artifacts(
@@ -236,6 +276,7 @@ def bench_niah(
             "samples_per_length": samples_per_length,
             "seed": seed,
             "position_mode": position_mode,
+            "adapter_type": adapter_type,
         },
         metrics=result,
         runner_version="v0.2",
@@ -256,6 +297,8 @@ def bench_mqar(
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
+    adapter_type = _adapter_type(adapters)
+    _warn_if_rule_based(adapter_type)
 
     pair_values = [num_pairs]
     query_values = [num_queries]
@@ -281,6 +324,7 @@ def bench_mqar(
         "benchmark": "mqar",
         "mean_accuracy": float(sum(r["micro_accuracy"] for r in rows) / len(rows)) if rows else 0.0,
         "rows": rows,
+        "adapter_type": adapter_type,
     }
 
     bundle = create_bundle(out_dir)
@@ -293,6 +337,7 @@ def bench_mqar(
             "pair_grid": pair_values,
             "query_grid": query_values,
             "seed": seed,
+            "adapter_type": adapter_type,
         },
         metrics=result,
         runner_version="v0.2",
@@ -314,6 +359,8 @@ def bench_longbench(
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
+    adapter_type = _adapter_type(adapters)
+    _warn_if_rule_based(adapter_type)
     runner = get_runner("longbench")
     result = runner(
         adapters=adapters,
@@ -322,6 +369,7 @@ def bench_longbench(
         seed=seed,
         dataset_file=dataset_file,
     )
+    result = {**result, "adapter_type": adapter_type}
 
     bundle = create_bundle(out_dir)
     write_artifacts(
@@ -333,6 +381,7 @@ def bench_longbench(
             "samples_per_task": samples_per_task,
             "seed": seed,
             "dataset_file": dataset_file,
+            "adapter_type": adapter_type,
         },
         metrics=result,
         runner_version="v0.2",
@@ -355,6 +404,8 @@ def bench_retrieval(
     out_dir: str | None = typer.Option(None),
 ) -> None:
     adapters = _select_adapters(adapter)
+    adapter_type = _adapter_type(adapters)
+    _warn_if_rule_based(adapter_type)
     runner = get_runner("retrieval")
     result = runner(
         adapters=adapters,
@@ -364,6 +415,7 @@ def bench_retrieval(
         seed=seed,
         dataset_file=dataset_file,
     )
+    result = {**result, "adapter_type": adapter_type}
 
     bundle = create_bundle(out_dir)
     write_artifacts(
@@ -376,6 +428,7 @@ def bench_retrieval(
             "samples_per_dataset": samples_per_dataset,
             "seed": seed,
             "dataset_file": dataset_file,
+            "adapter_type": adapter_type,
         },
         metrics=result,
         runner_version="v0.2",

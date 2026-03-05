@@ -33,6 +33,7 @@ def main() -> None:
         root / "outputs/reports/phase3_stat_summary.json",
         root / "outputs/reports/phase3_artifact_checksums.json",
         root / "outputs/reports/training_parity_table.json",
+        root / "configs/bench/smoke_targets.yaml",
         root / "docs/CLAIM_TO_EVIDENCE_MATRIX.md",
         root / "docs/reproduction_report.md",
         root / "docs/PROGRESS_LEDGER.md",
@@ -46,6 +47,19 @@ def main() -> None:
         checks.append({"name": f"exists:{path}", "ok": ok})
         if not ok:
             errors.append(f"missing required file: {path}")
+
+    legacy_target_path = root / "configs/bench/paper_targets.yaml"
+    legacy_target_absent = not legacy_target_path.exists()
+    checks.append(
+        {
+            "name": "absent:configs/bench/paper_targets.yaml",
+            "ok": legacy_target_absent,
+        }
+    )
+    if not legacy_target_absent:
+        errors.append(
+            "legacy benchmark target config configs/bench/paper_targets.yaml must be removed"
+        )
 
     independent_manifests = sorted(
         (root / "outputs/independent_repro").glob("*/manifest.json")

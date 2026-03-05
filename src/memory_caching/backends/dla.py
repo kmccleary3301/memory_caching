@@ -86,17 +86,31 @@ class DLABackend:
 
     def _compute_loss(self, pred: Tensor, v_t: Tensor) -> Tensor:
         if self.config.objective == "dot":
-            return -(pred * v_t).sum(dim=-1).mean()
+            # Per-memory-state objective; summing over (B,H) keeps update
+            # magnitude invariant to batch/head replication.
+            return -(pred * v_t).sum(dim=-1).sum()
         if self.config.objective == "l2":
-            return ((pred - v_t) ** 2).mean()
+            # Per-memory-state objective; summing over (B,H) keeps update
+            # magnitude invariant to batch/head replication.
+            return ((pred - v_t) ** 2).sum(dim=-1).sum()
         raise ValueError(f"unsupported objective: {self.config.objective}")
 
     def update(self, state: DLAState, k_t: Tensor, v_t: Tensor) -> DLAState:
         requires_graph = self.config.inner_update_mode == "differentiable"
 
         with torch.enable_grad():
-            weight_vars = [w.detach().requires_grad_(True) for w in state.weights]
-            bias_vars = [b.detach().requires_grad_(True) for b in state.biases]
+            if requires_graph:
+                weight_vars = [
+                    w if w.requires_grad else w.requires_grad_(True)
+                    for w in state.weights
+                ]
+                bias_vars = [
+                    b if b.requires_grad else b.requires_grad_(True)
+                    for b in state.biases
+                ]
+            else:
+                weight_vars = [w.detach().requires_grad_(True) for w in state.weights]
+                bias_vars = [b.detach().requires_grad_(True) for b in state.biases]
 
             temp_state = DLAState(weights=tuple(weight_vars), biases=tuple(bias_vars))
             pred = self.apply(temp_state, k_t)

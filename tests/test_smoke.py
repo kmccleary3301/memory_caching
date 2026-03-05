@@ -109,3 +109,36 @@ def test_smoke_titans_path_runs_and_schema_parity() -> None:
     }
     assert expected_keys.issubset(metrics.keys())
     assert metrics["backend"] == "titans"
+
+
+def test_smoke_swla_path_runs_and_schema_parity() -> None:
+    metrics = run_smoke_eval(
+        warmup_steps=1,
+        batch_size=1,
+        seq_len=8,
+        vocab_size=16,
+        d_model=8,
+        num_heads=2,
+        backend="swla",
+        swla_alpha=0.9,
+        swla_beta=0.1,
+        swla_lam=1.0,
+    )
+    expected_keys = {
+        "mode",
+        "device",
+        "backend",
+        "steps",
+        "batch_size",
+        "seq_len",
+        "vocab_size",
+        "initial_loss",
+        "final_loss",
+        "eval_loss",
+        "eval_accuracy",
+        "cache_segments",
+        "mean_segment_len",
+        "trainable_params",
+    }
+    assert expected_keys.issubset(metrics.keys())
+    assert metrics["backend"] == "swla"

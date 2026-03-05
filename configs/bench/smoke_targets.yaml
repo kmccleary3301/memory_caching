@@ -1,5 +1,5 @@
 schema_version: v1
-paper_reference: arxiv_2602_24281v1
+purpose: smoke_harness_targets
 generated_utc: "2026-03-04T00:00:00Z"
 benchmarks:
   niah:

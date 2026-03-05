@@ -7,7 +7,11 @@ from memory_caching.config import MCConfig, TitansConfig
 from memory_caching.layer import MemoryCachingLayer
 
 
-def _backend(objective: str = "l2", mode: str = "stopgrad") -> TitansBackend:
+def _backend(
+    objective: str = "l2",
+    mode: str = "stopgrad",
+    convention: str = "paper",
+) -> TitansBackend:
     return TitansBackend(
         TitansConfig(
             memory_width=6,
@@ -17,6 +21,7 @@ def _backend(objective: str = "l2", mode: str = "stopgrad") -> TitansBackend:
             step_size=0.1,
             momentum=0.8,
             retention_alpha=0.95,
+            update_convention=convention,
         )
     )
 
@@ -187,3 +192,102 @@ def test_titans_ssc_shape() -> None:
     y, cache = layer(torch.randn(1, 6, 8), return_cache=True)
     assert y.shape == (1, 6, 8)
     assert len(cache) == 3
+
+
+def test_titans_update_is_invariant_to_batch_head_replication() -> None:
+    torch.manual_seed(41)
+    backend = _backend(objective="l2", mode="stopgrad", convention="paper")
+    base = backend.init_state(
+        batch_size=1,
+        num_heads=1,
+        head_dim=4,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+    base = _random_state(base, seed=301)
+
+    k = torch.randn(1, 1, 4)
+    v = torch.randn(1, 1, 4)
+    updated_single = backend.update(base, k, v)
+
+    replicated = TitansState(
+        weights=tuple(w.repeat(2, 3, 1, 1) for w in base.weights),
+        biases=tuple(b.repeat(2, 3, 1) for b in base.biases),
+        s_w=tuple(sw.repeat(2, 3, 1, 1) for sw in base.s_w or ()),
+        s_b=tuple(sb.repeat(2, 3, 1) for sb in base.s_b or ()),
+    )
+    k_rep = k.repeat(2, 3, 1)
+    v_rep = v.repeat(2, 3, 1)
+    updated_rep = backend.update(replicated, k_rep, v_rep)
+
+    expected = updated_single.weights[0][0, 0].view(1, 1, *updated_single.weights[0].shape[-2:])
+    assert torch.allclose(updated_rep.weights[0], expected.expand_as(updated_rep.weights[0]), atol=1e-6)
+
+
+def test_titans_paper_update_convention_matches_equation() -> None:
+    torch.manual_seed(42)
+    backend = _backend(objective="l2", mode="stopgrad", convention="paper")
+    state = _random_state(
+        backend.init_state(
+            batch_size=1,
+            num_heads=1,
+            head_dim=4,
+            device=torch.device("cpu"),
+            dtype=torch.float32,
+        ),
+        seed=302,
+    )
+    k = torch.randn(1, 1, 4)
+    v = torch.randn(1, 1, 4)
+
+    with torch.enable_grad():
+        w_vars = [w.detach().requires_grad_(True) for w in state.weights]
+        b_vars = [b.detach().requires_grad_(True) for b in state.biases]
+        tmp_state = TitansState(weights=tuple(w_vars), biases=tuple(b_vars))
+        pred = backend.apply(tmp_state, k)
+        loss = backend._loss(pred, v)
+        grads = torch.autograd.grad(loss, [*w_vars, *b_vars], allow_unused=False)
+
+    n = len(w_vars)
+    grad_w = grads[:n]
+    grad_b = grads[n:]
+    updated = backend.update(state, k, v)
+
+    beta = backend.config.momentum
+    eta = backend.config.step_size
+    alpha = backend.config.retention_alpha
+
+    for idx in range(n):
+        expected_sw = beta * state.s_w[idx] - eta * grad_w[idx]
+        expected_sb = beta * state.s_b[idx] - eta * grad_b[idx]
+        expected_w = alpha * w_vars[idx] - expected_sw
+        expected_b = alpha * b_vars[idx] - expected_sb
+        assert torch.allclose(updated.weights[idx], expected_w.detach(), atol=1e-6)
+        assert torch.allclose(updated.biases[idx], expected_b.detach(), atol=1e-6)
+
+
+def test_titans_differentiable_mode_unrolls_across_steps() -> None:
+    torch.manual_seed(43)
+    backend = _backend(objective="l2", mode="differentiable", convention="paper")
+    state = backend.init_state(
+        batch_size=1,
+        num_heads=1,
+        head_dim=4,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+    state = _random_state(state, seed=401)
+
+    k1 = torch.randn(1, 1, 4, requires_grad=True)
+    v1 = torch.randn(1, 1, 4)
+    k2 = torch.randn(1, 1, 4)
+    v2 = torch.randn(1, 1, 4)
+    q = torch.randn(1, 1, 4)
+
+    s1 = backend.update(state, k1, v1)
+    s2 = backend.update(s1, k2, v2)
+    loss = backend.apply(s2, q).sum()
+    grad_k1 = torch.autograd.grad(loss, k1, allow_unused=True)[0]
+
+    assert grad_k1 is not None
+    assert grad_k1.abs().sum().item() > 0.0

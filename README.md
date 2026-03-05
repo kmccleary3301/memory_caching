@@ -5,14 +5,14 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 ## Status
 
 - This repository is **not** an official release from the paper authors.
-- Current work targets mechanism-faithful implementation before paper-scale metric parity.
+- Current work targets mechanism-faithful implementation of the **Memory Caching wrapper** before paper-scale metric parity.
 - We do **not** currently claim exact reproduction of published numbers.
 
 ## Current scope
 
 - Core MC wrapper with Residual / GRM / Soup / SSC.
 - Segmentation modes: constant and logarithmic.
-- Backends: linear, DLA, Titans.
+- Backends: linear, DLA, Titans, SWLA(c=2).
 - Smoke harness for train/eval across all backends.
 - Benchmark harnesses: NIAH, MQAR, LongBench scaffold, retrieval scaffold.
 - Benchmark scoring follows explicit task-aligned policies (`exact_match`, `token_f1`, `rouge_l_f1`) with per-row metric labels.
@@ -20,7 +20,9 @@ Community reproduction of **Memory Caching: RNNs with Growing Memory** (arXiv:26
 - Included sample dataset files: `examples/longbench_subset.jsonl`, `examples/retrieval_subset.jsonl`.
 - Deterministic tokenizer/data/train/eval pipeline with real checkpoint artifacts.
 - Artifact bundles: metrics + rows + csv + report + manifest.
-- Phase3 reports include trend, parity dashboard, statistical summary, and artifact checksums.
+- Phase3 reports include trend, smoke-target dashboard, statistical summary, and artifact checksums.
+- Default benchmark adapters are **rule-based compatibility adapters**; benchmark scores from these adapters are harness checks, not model-quality evidence.
+- Deep-memory backends (DLA/Titans) and SWLA(c=2) are reference implementations and are not yet validated against paper-reported training dynamics or metrics.
 
 ## Quickstart
 
@@ -41,6 +43,7 @@ uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_g
 - `docs/CLAIM_BOUNDARY.md`
 - `docs/RELEASE_GATE_CHECKLIST_V1.md`
 - `docs/BACKEND_CAPABILITY_MATRIX.md`
+- `docs/PAPER_TO_CODE.md`
 - `docs/BACKEND_API_CONTRACT.md`
 - `docs/BACKEND_REPRODUCIBILITY.md`
 - `docs/BENCHMARK_COMMAND_MATRIX.md`

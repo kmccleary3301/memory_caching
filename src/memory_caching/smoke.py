@@ -11,8 +11,9 @@ import torch.nn.functional as F
 
 from .backends.dla import DLABackend
 from .backends.linear import LinearMemoryBackend
+from .backends.swla import SWLABackend
 from .backends.titans import TitansBackend
-from .config import BackendKind, DLAConfig, MCConfig, TitansConfig
+from .config import BackendKind, DLAConfig, MCConfig, SWLAConfig, TitansConfig
 from .layer import MemoryCachingLayer
 
 Aggregation = Literal["residual", "grm", "soup", "ssc"]
@@ -22,7 +23,8 @@ StateInit = Literal["checkpoint", "restart"]
 _VALID_AGGREGATIONS = {"residual", "grm", "soup", "ssc"}
 _VALID_SEGMENTATIONS = {"constant", "logarithmic"}
 _VALID_STATE_INIT = {"checkpoint", "restart"}
-_VALID_BACKENDS = {"linear", "dla", "titans"}
+_VALID_BACKENDS = {"linear", "dla", "titans", "swla"}
+_VALID_TITANS_UPDATE_CONVENTIONS = {"paper", "gradient_descent"}
 
 
 @dataclass(frozen=True)
@@ -71,6 +73,8 @@ def _build_backend(config: MCConfig):
         return DLABackend(config.dla)
     if config.backend == "titans":
         return TitansBackend(config.titans)
+    if config.backend == "swla":
+        return SWLABackend(config.swla)
     raise ValueError(f"unsupported backend: {config.backend}")
 
 
@@ -172,12 +176,21 @@ def _build_config(
     titans_step_size: float,
     titans_momentum: float,
     titans_retention_alpha: float,
+    titans_update_convention: str,
+    swla_alpha: float,
+    swla_beta: float,
+    swla_lam: float,
     aggregation: str,
     segmentation: str,
     segment_size: int,
     state_init_mode: str,
     ssc_top_k: int,
 ) -> MCConfig:
+    if titans_update_convention not in _VALID_TITANS_UPDATE_CONVENTIONS:
+        raise ValueError(
+            "invalid titans_update_convention: "
+            f"{titans_update_convention} (expected one of {_VALID_TITANS_UPDATE_CONVENTIONS})"
+        )
     return MCConfig(
         d_model=d_model,
         num_heads=num_heads,
@@ -198,7 +211,9 @@ def _build_config(
             step_size=titans_step_size,
             momentum=titans_momentum,
             retention_alpha=titans_retention_alpha,
+            update_convention=titans_update_convention,
         ),
+        swla=SWLAConfig(alpha=swla_alpha, beta=swla_beta, lam=swla_lam),
         aggregation=aggregation,
         segmentation=segmentation,
         segment_size=segment_size,
@@ -229,6 +244,10 @@ def run_smoke_train(
     titans_step_size: float = 0.05,
     titans_momentum: float = 0.9,
     titans_retention_alpha: float = 1.0,
+    titans_update_convention: str = "paper",
+    swla_alpha: float = 1.0,
+    swla_beta: float = 0.0,
+    swla_lam: float = 1.0,
     segment_size: int = 16,
     aggregation: str = "grm",
     segmentation: str = "constant",
@@ -273,6 +292,10 @@ def run_smoke_train(
         titans_step_size=titans_step_size,
         titans_momentum=titans_momentum,
         titans_retention_alpha=titans_retention_alpha,
+        titans_update_convention=titans_update_convention,
+        swla_alpha=swla_alpha,
+        swla_beta=swla_beta,
+        swla_lam=swla_lam,
         aggregation=agg,
         segmentation=seg,
         segment_size=segment_size,
@@ -360,6 +383,10 @@ def run_smoke_eval(
     titans_step_size: float = 0.05,
     titans_momentum: float = 0.9,
     titans_retention_alpha: float = 1.0,
+    titans_update_convention: str = "paper",
+    swla_alpha: float = 1.0,
+    swla_beta: float = 0.0,
+    swla_lam: float = 1.0,
     segment_size: int = 16,
     aggregation: str = "grm",
     segmentation: str = "constant",
@@ -404,6 +431,10 @@ def run_smoke_eval(
         titans_step_size=titans_step_size,
         titans_momentum=titans_momentum,
         titans_retention_alpha=titans_retention_alpha,
+        titans_update_convention=titans_update_convention,
+        swla_alpha=swla_alpha,
+        swla_beta=swla_beta,
+        swla_lam=swla_lam,
         aggregation=agg,
         segmentation=seg,
         segment_size=segment_size,

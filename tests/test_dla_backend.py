@@ -170,3 +170,60 @@ def test_dla_soup_not_forced_equivalent_to_grm_backend_level() -> None:
     soup_out = backend.apply(soup_state, q)
 
     assert (grm_out - soup_out).abs().max().item() > 1e-6
+
+
+def test_dla_update_is_invariant_to_batch_head_replication() -> None:
+    torch.manual_seed(31)
+    backend = _make_backend(objective="l2", mode="stopgrad")
+    base = backend.init_state(
+        batch_size=1,
+        num_heads=1,
+        head_dim=4,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+    base = _randomize_state(base, seed=77)
+
+    k = torch.randn(1, 1, 4)
+    v = torch.randn(1, 1, 4)
+    updated_single = backend.update(base, k, v)
+
+    replicated = DLAState(
+        weights=tuple(w.repeat(2, 3, 1, 1) for w in base.weights),
+        biases=tuple(b.repeat(2, 3, 1) for b in base.biases),
+        vel_w=tuple(w.repeat(2, 3, 1, 1) for w in base.vel_w or ()),
+        vel_b=tuple(b.repeat(2, 3, 1) for b in base.vel_b or ()),
+    )
+    k_rep = k.repeat(2, 3, 1)
+    v_rep = v.repeat(2, 3, 1)
+    updated_rep = backend.update(replicated, k_rep, v_rep)
+
+    expected = updated_single.weights[0][0, 0].view(1, 1, *updated_single.weights[0].shape[-2:])
+    assert torch.allclose(updated_rep.weights[0], expected.expand_as(updated_rep.weights[0]), atol=1e-6)
+
+
+def test_dla_differentiable_mode_unrolls_across_steps() -> None:
+    torch.manual_seed(32)
+    backend = _make_backend(objective="l2", mode="differentiable")
+    state = backend.init_state(
+        batch_size=1,
+        num_heads=1,
+        head_dim=4,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+    state = _randomize_state(state, seed=321)
+
+    k1 = torch.randn(1, 1, 4, requires_grad=True)
+    v1 = torch.randn(1, 1, 4)
+    k2 = torch.randn(1, 1, 4)
+    v2 = torch.randn(1, 1, 4)
+    q = torch.randn(1, 1, 4)
+
+    s1 = backend.update(state, k1, v1)
+    s2 = backend.update(s1, k2, v2)
+    loss = backend.apply(s2, q).sum()
+    grad_k1 = torch.autograd.grad(loss, k1, allow_unused=True)[0]
+
+    assert grad_k1 is not None
+    assert grad_k1.abs().sum().item() > 0.0

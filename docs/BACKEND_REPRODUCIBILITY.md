@@ -6,7 +6,7 @@ This note describes what is currently reproducible for backend behavior and what
 
 ## Deterministic components
 
-- Fixed-seed smoke harnesses for `linear`, `dla`, and `titans`.
+- Fixed-seed smoke harnesses for `linear`, `dla`, `titans`, and `swla`.
 - Deterministic synthetic benchmark generators (NIAH, MQAR).
 - Deterministic artifact schemas with machine-readable manifests.
 - Runtime backend contract checks in `MemoryCachingLayer`.
@@ -18,10 +18,12 @@ This note describes what is currently reproducible for backend behavior and what
   - `outputs/smoke/phase2_linear_eval.json`
   - `outputs/smoke/phase2_dla_eval.json`
   - `outputs/smoke/phase2_titans_eval.json`
+  - `outputs/smoke/phase2_swla_eval.json`
 - Unit tests:
   - `tests/test_linear_backend.py`
   - `tests/test_dla_backend.py`
   - `tests/test_titans_backend.py`
+  - `tests/test_swla_backend.py`
   - `tests/test_layer.py`
 
 ## Current limitations

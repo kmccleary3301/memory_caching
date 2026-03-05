@@ -1,75 +1,34 @@
 # Implementation Status
 
-## Completed
+## Implemented (code present)
 
 - MC configuration schema and validation.
-- Segment cache and backend protocol contracts.
-- Segmentation utilities (constant/logarithmic + explicit lengths validation).
-- Backends:
-  - linear
-  - dla
-  - titans
-- MC layer aggregators:
-  - Residual
-  - GRM
-  - Soup
-  - SSC
-- Backend contract negative tests:
-  - invalid shape/dtype/device guard assertions
-  - null-state backend failure assertions
-  - per-backend deterministic smoke reproducibility assertions
-  - checkpoint/restart divergence tests across all aggregators
-  - soup fallback equivalence tests for non-mixable backends
-  - DLA/Titans update-mode graph-property divergence tests
-- State init modes:
-  - checkpoint
-  - restart
-- CLI commands:
-  - status
-  - list-variants
-  - segment
-  - smoke-train
-  - smoke-eval
-  - bench list/niah/mqar/longbench/retrieval
-- Synthetic benchmark harnesses:
-  - deterministic NIAH generators + normalized exact-match scoring
-  - deterministic MQAR generators + query/all-query exact-match scoring
-  - LongBench scaffold runner with task-group metric routing (`token_f1`/`rouge_l_f1`/`exact_match`)
-  - retrieval scaffold runner with `max(exact_match, token_f1)` scoring
-  - explicit model-backed adapter interface (current default predictor is rule-based compatibility)
-  - artifact bundle writer (`metrics.json`, `rows.jsonl`, `summary.csv`, `report.md`, `manifest.json`)
-- Benchmark execution hardening:
-  - benchmark sweep script with timeout/retry/resume markers
-  - benchmark trend report generator (`json` + `md`)
-  - parity dashboard report (`json` + `md`) against configured paper targets
-  - statistical summary report (`json` + `md`) with CI estimates
-  - artifact checksum archival report
-  - stricter evidence manifest validator
-  - optional JSONL dataset-file ingestion for longbench/retrieval + sample files
-- Bootstrap pipeline scaffolds:
-  - tokenizer config + deterministic vocabulary trainer (JSON model + vocab file + corpus fingerprint)
-  - data mixture config + deterministic weighted sampling + split-aware tokenized shard writer (`train/val/test`)
-  - train profile configs + actual tiny-LM train loop (`torch.save` checkpoints + resume support + scheduler + telemetry)
-  - compile-aware training controls (`--compile`, mode/backend/fullgraph/dynamic, matmul precision)
-  - periodic eval hook reads checkpoint loss tails and emits proxy score
-  - resume consistency parity checker (`resume` vs `full` checkpoint tensor diff)
-  - full-run training matrix execution (`pilot_full`, `mid_full`, `target_full`) with archived telemetry/eval artifacts
-- Phase summary artifacts:
-  - phase2 summary writer
-  - phase3 summary writer
-  - phase4 summary writer
-- Evidence and governance scaffolds:
-  - release gate v1
-  - release gate checker script
-  - independent clean-environment repro pass script + archived manifests
-  - artifact-size/type/path guardrail script integrated in CI
-  - claim boundary
-  - claim-to-evidence matrix with blocked claims
-  - progress updater and evidence validators
-  - legacy artifact quarantine utility
-  - backend API contract and reproducibility notes
+- Segmentation modes: constant and logarithmic.
+- MC wrapper with aggregations: residual, GRM, soup, SSC.
+- Backends: linear, DLA, Titans, SWLA(c=2).
+- State init modes: checkpoint and restart.
+- Benchmark harnesses: NIAH, MQAR, LongBench scaffold, retrieval scaffold.
+- CLI commands for smoke and benchmark runs.
+- Data/train/report/check scripts for scaffold execution.
 
-## Remaining
+## Validated (tracked tests)
 
-- Out-of-scope for current plan completion: production dataset ingestion/execution for LongBench/retrieval parity claims at paper scale (dataset-file mode exists, paper dataset integration/runbooks pending).
-- Out-of-scope for current plan completion: full paper-scale training throughput/efficiency parity evidence on target hardware.
+- Segmentation determinism and length decomposition.
+- MC causality and aggregation invariants.
+- Backend contract guards and negative-path validation.
+- DLA/Titans objective/update behavior and graph-mode checks.
+- SWLA recurrence and state-mixing equivalence checks.
+- Inner-update batch/head invariance checks (DLA/Titans).
+- Differentiable inner-update temporal gradient-flow checks (DLA/Titans).
+- Rule-based adapter warning and metadata emission in benchmark CLI.
+
+## Implemented with explicit caveats
+
+- Benchmark adapters default to rule-based compatibility adapters unless model-backed adapters are wired.
+- `soup` on non-mixable backends requires explicit fallback opt-in (`allow_output_mixture_fallback=true`).
+- Smoke-target dashboards are harness checks, not paper-metric parity evidence.
+
+## Not implemented (paper coverage gaps)
+
+- Log-Linear++ baseline integration.
+- Paper-scale model-backed benchmark parity and throughput parity evidence.

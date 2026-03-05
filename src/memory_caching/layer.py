@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import fields, is_dataclass
 from typing import Sequence
 
 import torch
@@ -138,11 +139,77 @@ class MemoryCachingLayer(nn.Module):
             states = [c.mem_state for c in cached] + [online_state]
             mixed_state = self.backend.mix_states(states, weights)
             return self.backend.apply(mixed_state, q_t)
+        if self.config.aggregation == "soup" and not self.config.allow_output_mixture_fallback:
+            raise ValueError(
+                "aggregation='soup' requires a backend that supports state mixing; "
+                "set allow_output_mixture_fallback=True to enable output-space fallback."
+            )
 
         responses = [self.backend.apply(c.mem_state, q_t) for c in cached]
         responses.append(self.backend.apply(online_state, q_t))
         stacked_responses = torch.stack(responses, dim=2)  # [B,H,S,Dh]
         return torch.einsum("bhs,bhsd->bhd", weights, stacked_responses)
+
+    def _merge_state_by_active_mask(
+        self,
+        *,
+        previous: object,
+        updated: object,
+        active_mask: Tensor,
+    ) -> object:
+        if torch.is_tensor(previous) and torch.is_tensor(updated):
+            if previous.shape != updated.shape:
+                raise RuntimeError(
+                    "backend update returned a tensor state with changed shape under masked update"
+                )
+            if updated.ndim == 0 or updated.shape[0] != active_mask.shape[0]:
+                return updated
+            selector = active_mask.view(active_mask.shape[0], *([1] * (updated.ndim - 1)))
+            return torch.where(selector, updated, previous)
+
+        if is_dataclass(previous) and is_dataclass(updated):
+            if type(previous) is not type(updated):
+                raise RuntimeError("backend state dataclass type changed after update")
+            values: dict[str, object] = {}
+            for f in fields(previous):
+                values[f.name] = self._merge_state_by_active_mask(
+                    previous=getattr(previous, f.name),
+                    updated=getattr(updated, f.name),
+                    active_mask=active_mask,
+                )
+            return previous.__class__(**values)
+
+        if isinstance(previous, tuple) and isinstance(updated, tuple):
+            return tuple(
+                self._merge_state_by_active_mask(
+                    previous=p,
+                    updated=n,
+                    active_mask=active_mask,
+                )
+                for p, n in zip(previous, updated, strict=True)
+            )
+
+        if isinstance(previous, list) and isinstance(updated, list):
+            return [
+                self._merge_state_by_active_mask(
+                    previous=p,
+                    updated=n,
+                    active_mask=active_mask,
+                )
+                for p, n in zip(previous, updated, strict=True)
+            ]
+
+        if isinstance(previous, dict) and isinstance(updated, dict):
+            return {
+                k: self._merge_state_by_active_mask(
+                    previous=previous[k],
+                    updated=updated[k],
+                    active_mask=active_mask,
+                )
+                for k in previous
+            }
+
+        return updated
 
     def _ssc_aggregate(
         self,
@@ -227,6 +294,7 @@ class MemoryCachingLayer(nn.Module):
         *,
         segment_size: int | None = None,
         segment_lengths: Sequence[int] | None = None,
+        attention_mask: Tensor | None = None,
         state_init_mode: StateInitMode | None = None,
         return_cache: bool = False,
     ) -> Tensor | tuple[Tensor, list[SegmentCache]]:
@@ -238,6 +306,16 @@ class MemoryCachingLayer(nn.Module):
             )
 
         bsz, seq_len, _ = x.shape
+        if attention_mask is not None:
+            if tuple(attention_mask.shape) != (bsz, seq_len):
+                raise ValueError(
+                    f"attention_mask expected shape {(bsz, seq_len)}, got {tuple(attention_mask.shape)}"
+                )
+            active_tokens = attention_mask.to(device=x.device)
+            if active_tokens.dtype != torch.bool:
+                active_tokens = active_tokens != 0
+        else:
+            active_tokens = None
         effective_init_mode = (
             self.config.state_init_mode if state_init_mode is None else state_init_mode
         )
@@ -298,6 +376,7 @@ class MemoryCachingLayer(nn.Module):
                 v_t = v[:, t]
                 q_t = q[:, t]
                 u_t = q_t if self.config.use_q_as_u else u[:, t]
+                active_mask = active_tokens[:, t] if active_tokens is not None else None
                 ensure_head_tensor(
                     "k_t",
                     k_t,
@@ -335,9 +414,24 @@ class MemoryCachingLayer(nn.Module):
                     dtype=x.dtype,
                 )
 
-                online_state = self.backend.update(online_state, k_t, v_t)
-                online_state = ensure_backend_state(online_state, stage="update")
-                online_context = online_context + k_t
+                if active_mask is not None and not bool(active_mask.any()):
+                    outputs[:, t] = torch.zeros_like(q_t)
+                    continue
+
+                if active_mask is None or bool(active_mask.all()):
+                    online_state = self.backend.update(online_state, k_t, v_t)
+                    online_state = ensure_backend_state(online_state, stage="update")
+                    online_context = online_context + k_t
+                else:
+                    updated_state = self.backend.update(online_state, k_t, v_t)
+                    updated_state = ensure_backend_state(updated_state, stage="update")
+                    online_state = self._merge_state_by_active_mask(
+                        previous=online_state,
+                        updated=updated_state,
+                        active_mask=active_mask,
+                    )
+                    active_scale = active_mask.to(dtype=k_t.dtype).view(bsz, 1, 1)
+                    online_context = online_context + (k_t * active_scale)
                 ensure_head_tensor(
                     "online_context",
                     online_context,
@@ -355,6 +449,8 @@ class MemoryCachingLayer(nn.Module):
                     cached=cached,
                     online_context=online_context,
                 )
+                if active_mask is not None:
+                    out_t = out_t * active_mask.to(dtype=out_t.dtype).view(bsz, 1, 1)
                 ensure_head_tensor(
                     "aggregate_output",
                     out_t,

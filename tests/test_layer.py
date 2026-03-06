@@ -84,8 +84,8 @@ def test_layer_segmentation_determinism_with_explicit_lengths() -> None:
     layer = _make_layer(aggregation="residual", segment_size=3)
 
     x = torch.randn(1, 9, 8)
-    y_default, cache_default = layer(x, return_cache=True)
-    y_explicit, cache_explicit = layer(x, segment_lengths=[3, 3, 3], return_cache=True)
+    y_default, cache_default = layer.forward_with_cache(x)
+    y_explicit, cache_explicit = layer.forward_with_cache(x, segment_lengths=[3, 3, 3])
 
     assert torch.allclose(y_default, y_explicit, atol=1e-6)
     assert [c.seg_len for c in cache_default] == [3, 3, 3]
@@ -96,7 +96,7 @@ def test_non_uniform_segment_lengths_cache_accounting() -> None:
     torch.manual_seed(11)
     layer = _make_layer(aggregation="grm", segment_size=9)
     x = torch.randn(1, 10, 8)
-    _, cache = layer(x, segment_lengths=[2, 3, 5], return_cache=True)
+    _, cache = layer.forward_with_cache(x, segment_lengths=[2, 3, 5])
     assert [c.seg_len for c in cache] == [2, 3, 5]
 
 
@@ -229,7 +229,7 @@ def test_ssc_forward_shape_and_cache_count() -> None:
     ssc = _make_layer(aggregation="ssc", segment_size=2, ssc_top_k=1)
 
     x = torch.randn(1, 6, 8)
-    y, cache = ssc(x, return_cache=True)
+    y, cache = ssc.forward_with_cache(x)
 
     assert y.shape == x.shape
     assert len(cache) == 3

@@ -14,7 +14,7 @@ uv sync --extra dev
 ./scripts/checks/bench_smoke.sh
 ./scripts/checks/pipeline_smoke.sh
 ./scripts/checks/resume_consistency.sh
-uv run python scripts/reports/release_gate_v1.py --out outputs/reports/release_gate_v1.json
+uv run python scripts/reports/release_gate_v1.py --mode repo --out outputs/reports/release_gate_repo_v1.json
 
 mkdir -p "${OLDPWD}/${ARCHIVE_DIR}"
 cp -r outputs/checks "${OLDPWD}/${ARCHIVE_DIR}/checks"

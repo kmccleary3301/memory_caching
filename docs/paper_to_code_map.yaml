@@ -42,7 +42,7 @@ sections:
           - "memory_caching.layer::MemoryCachingLayer"
         status: "implemented"
       - mechanism: "Memory Soup"
-        paper_anchor: "Soup definition"
+        paper_anchor: "Soup definition; true state-space mixing on mixable backends, explicit output-mixture fallback otherwise"
         code:
           - "src/memory_caching/layer.py"
           - "tests/test_layer.py"
@@ -62,7 +62,7 @@ sections:
   - name: "Backends"
     items:
       - mechanism: "Linear memory backend"
-        paper_anchor: "LA-style memory update"
+        paper_anchor: "Unnormalized matrix-memory reference backend for the wrapper; not a full normalized linear-attention baseline and not a paper-parity claim"
         code:
           - "src/memory_caching/backends/linear.py"
           - "tests/test_linear_backend.py"
@@ -70,7 +70,7 @@ sections:
           - "memory_caching.backends.linear::LinearMemoryBackend"
         status: "implemented"
       - mechanism: "DLA backend"
-        paper_anchor: "DLA equations"
+        paper_anchor: "DLA-style deep-memory equations with constant scalar coefficients; implementation-faithful but not paper-metric validated"
         code:
           - "src/memory_caching/backends/dla.py"
           - "tests/test_dla_backend.py"
@@ -78,7 +78,7 @@ sections:
           - "memory_caching.backends.dla::DLABackend"
         status: "implemented_with_caveat"
       - mechanism: "Titans backend"
-        paper_anchor: "Titans equations"
+        paper_anchor: "Titans-style deep-memory equations with explicit sign convention and constant scalar coefficients; implementation-faithful but not paper-metric validated"
         code:
           - "src/memory_caching/backends/titans.py"
           - "tests/test_titans_backend.py"
@@ -87,7 +87,7 @@ sections:
           - "memory_caching.backends.titans::TitansBackend"
         status: "implemented_with_caveat"
       - mechanism: "SWLA c=2 backend"
-        paper_anchor: "SWLA recurrence/retrieval"
+        paper_anchor: "SWLA c=2 recurrence with previous-outer-product carry and constant scalar coefficients; implementation-faithful but not paper-metric validated"
         code:
           - "src/memory_caching/backends/swla.py"
           - "tests/test_swla_backend.py"

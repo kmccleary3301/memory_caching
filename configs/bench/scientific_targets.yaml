@@ -1,0 +1,24 @@
+schema_version: scientific_tracking_v1
+purpose: scientific_model_backed_tracking_targets
+generated_utc: "2026-03-06T00:00:00Z"
+provenance:
+  - "Non-smoke scientific tracking targets for model-backed benchmark artifacts."
+  - "These are not paper targets and must not be interpreted as paper-metric parity goals."
+  - "Targets are intentionally conservative floors used to validate non-smoke artifact semantics."
+benchmarks:
+  niah:
+    metric: mean_accuracy
+    target: 0.0
+    tolerance: 0.0
+  mqar:
+    metric: mean_accuracy
+    target: 0.0
+    tolerance: 0.0
+  longbench:
+    metric: mean_accuracy
+    target: 0.0
+    tolerance: 0.0
+  retrieval:
+    metric: mean_accuracy
+    target: 0.0
+    tolerance: 0.0

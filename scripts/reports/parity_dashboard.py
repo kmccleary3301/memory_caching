@@ -81,6 +81,9 @@ def main() -> None:
         "schema_version": "v1",
         "trend_source": str(args.trend_json),
         "targets_source": str(args.targets_yaml),
+        "targets_schema_version": str(targets.get("schema_version", "")),
+        "targets_purpose": str(targets.get("purpose", "")),
+        "targets_provenance": targets.get("provenance", []),
         "rows": rows,
     }
 

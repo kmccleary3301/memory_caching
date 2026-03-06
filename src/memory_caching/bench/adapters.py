@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Callable, Mapping
+from pathlib import Path
+from typing import Any, Callable, Mapping
+
+from ..models import ByteTokenizer, greedy_generate_text, load_tiny_model_checkpoint
 
 
 @dataclass(frozen=True)
@@ -18,7 +21,7 @@ class BenchmarkAdapter:
 class ModelBackedAdapter(BenchmarkAdapter):
     backend_kind: str
     checkpoint_path: str | None = None
-    metadata: Mapping[str, str] | None = None
+    metadata: Mapping[str, Any] | None = None
 
 
 _PASSKEY_RE = re.compile(r"PASSKEY\s*:\s*([A-Za-z0-9\-]+)")
@@ -78,12 +81,61 @@ def make_model_backed_adapter(
     backend_kind: str,
     predictor: Callable[[str], str],
     checkpoint_path: str | None = None,
-    metadata: Mapping[str, str] | None = None,
+    metadata: Mapping[str, Any] | None = None,
 ) -> ModelBackedAdapter:
     return ModelBackedAdapter(
         name=name,
         predictor=predictor,
         backend_kind=backend_kind,
         checkpoint_path=checkpoint_path,
+        metadata=metadata,
+    )
+
+
+def make_checkpoint_model_backed_adapter(
+    *,
+    checkpoint_path: str,
+    device: str = "cpu",
+    max_new_tokens: int = 16,
+    max_input_tokens: int = 512,
+    seed: int = 0,
+    name: str | None = None,
+) -> ModelBackedAdapter:
+    resolved = Path(checkpoint_path).resolve()
+    model, payload = load_tiny_model_checkpoint(resolved, device=device)
+    tokenizer = ByteTokenizer()
+    model_spec = payload.get("model_spec", {})
+    if not isinstance(model_spec, dict):
+        raise ValueError(f"{resolved}: checkpoint missing model_spec")
+    backend_kind = str(model_spec.get("backend", model_spec.get("model_family", "unknown")))
+
+    def _predict(prompt: str) -> str:
+        return greedy_generate_text(
+            model=model,
+            tokenizer=tokenizer,
+            prompt=prompt,
+            device=device,
+            max_input_tokens=max_input_tokens,
+            max_new_tokens=max_new_tokens,
+            seed=seed,
+        )
+
+    metadata: dict[str, Any] = {
+        "model_family": str(model_spec.get("model_family", "unknown")),
+        "checkpoint_path": str(resolved),
+        "tokenizer_kind": "byte",
+        "device": str(device),
+        "generation_mode": "greedy",
+        "max_new_tokens": int(max_new_tokens),
+        "max_input_tokens": int(max_input_tokens),
+        "seed": int(seed),
+        "backend": str(model_spec.get("backend", "")),
+        "aggregation": str(model_spec.get("aggregation", "")),
+    }
+    return make_model_backed_adapter(
+        name=name or f"checkpoint-model::{resolved.stem}",
+        backend_kind=backend_kind,
+        predictor=_predict,
+        checkpoint_path=str(resolved),
         metadata=metadata,
     )

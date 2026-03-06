@@ -16,6 +16,7 @@ from .bench.adapters import (
     LinearMCAdapter,
     ModelBackedAdapter,
     TitansMCAdapter,
+    make_checkpoint_model_backed_adapter,
 )
 from .bench.artifacts import create_bundle, write_artifacts
 from .bench.runner import get_runner, list_runners, run_mqar_suite, run_niah_suite
@@ -29,8 +30,30 @@ bench_app = typer.Typer(help="Benchmark harness commands")
 app.add_typer(bench_app, name="bench")
 
 
-def _select_adapters(which: str):
+def _select_adapters(
+    which: str,
+    *,
+    model_checkpoint: str | None = None,
+    model_device: str = "cpu",
+    model_max_new_tokens: int = 16,
+    model_max_input_tokens: int = 512,
+    model_seed: int = 0,
+):
     normalized = which.strip().lower()
+    if model_checkpoint is not None:
+        if normalized not in {"model", "model_backed"}:
+            raise typer.BadParameter(
+                "adapter must be one of: model, model_backed when --model-checkpoint is provided"
+            )
+        return [
+            make_checkpoint_model_backed_adapter(
+                checkpoint_path=model_checkpoint,
+                device=model_device,
+                max_new_tokens=model_max_new_tokens,
+                max_input_tokens=model_max_input_tokens,
+                seed=model_seed,
+            )
+        ]
     if normalized == "linear":
         return [LinearMCAdapter()]
     if normalized == "dla":
@@ -41,7 +64,9 @@ def _select_adapters(which: str):
         return [LinearMCAdapter(), DLAMCAdapter()]
     if normalized == "all":
         return [LinearMCAdapter(), DLAMCAdapter(), TitansMCAdapter()]
-    raise typer.BadParameter("adapter must be one of: linear, dla, titans, both, all")
+    raise typer.BadParameter(
+        "adapter must be one of: linear, dla, titans, both, all, model, model_backed"
+    )
 
 
 def _adapter_type(adapters: list[BenchmarkAdapter]) -> str:
@@ -57,6 +82,15 @@ def _warn_if_rule_based(adapter_type: str) -> None:
             fg=typer.colors.YELLOW,
             err=True,
         )
+
+
+def _model_info(adapters: list[BenchmarkAdapter]) -> dict[str, object] | None:
+    if not adapters or not all(isinstance(adapter, ModelBackedAdapter) for adapter in adapters):
+        return None
+    first = adapters[0]
+    if not isinstance(first, ModelBackedAdapter):
+        return None
+    return dict(first.metadata or {})
 
 
 def _resolve_device(device: str) -> torch.device:
@@ -83,7 +117,7 @@ def _build_backend(config: MCConfig):
 
 @app.command()
 def status() -> None:
-    typer.echo("memory_caching: m70 execution in progress")
+    typer.echo("memory_caching: engineering scaffold available; scientific reproduction remains incomplete")
 
 
 @app.command("list-variants")
@@ -351,7 +385,7 @@ def debug_layer(
 
     layer = MemoryCachingLayer(config=config, backend=_build_backend(config)).to(resolved_device)
     x = torch.randn(batch_size, seq_len, d_model, device=resolved_device)
-    _, debug_rows = layer(x, return_debug=True)
+    _, debug_rows = layer.inspect(x)
 
     payload = {
         "mode": "debug_layer",
@@ -378,15 +412,27 @@ def bench_list() -> None:
 
 @bench_app.command("niah")
 def bench_niah(
-    adapter: str = typer.Option("all", help="linear, dla, titans, both, or all"),
+    adapter: str = typer.Option("all", help="linear, dla, titans, both, all, or model"),
     tasks: str = typer.Option("s_niah_1,s_niah_2,s_niah_3"),
     context_lengths: str = typer.Option("4096,8192,16384"),
     samples_per_length: int = typer.Option(16),
     seed: int = typer.Option(0),
     position_mode: str = typer.Option("uniform"),
+    model_checkpoint: str | None = typer.Option(None, help="checkpoint for model-backed evaluation"),
+    model_device: str = typer.Option("cpu"),
+    model_max_new_tokens: int = typer.Option(16),
+    model_max_input_tokens: int = typer.Option(512),
+    model_seed: int = typer.Option(0),
     out_dir: str | None = typer.Option(None),
 ) -> None:
-    adapters = _select_adapters(adapter)
+    adapters = _select_adapters(
+        adapter,
+        model_checkpoint=model_checkpoint,
+        model_device=model_device,
+        model_max_new_tokens=model_max_new_tokens,
+        model_max_input_tokens=model_max_input_tokens,
+        model_seed=model_seed,
+    )
     adapter_type = _adapter_type(adapters)
     _warn_if_rule_based(adapter_type)
     task_list = [t.strip() for t in tasks.split(",") if t.strip()]
@@ -414,6 +460,7 @@ def bench_niah(
             "seed": seed,
             "position_mode": position_mode,
             "adapter_type": adapter_type,
+            "model_info": _model_info(adapters),
         },
         metrics=result,
         runner_version="v0.2",
@@ -424,16 +471,28 @@ def bench_niah(
 
 @bench_app.command("mqar")
 def bench_mqar(
-    adapter: str = typer.Option("all", help="linear, dla, titans, both, or all"),
+    adapter: str = typer.Option("all", help="linear, dla, titans, both, all, or model"),
     samples: int = typer.Option(64),
     num_pairs: int = typer.Option(16),
     num_queries: int = typer.Option(4),
     pair_grid: str | None = typer.Option(None, help="comma list, e.g. 8,16,32"),
     query_grid: str | None = typer.Option(None, help="comma list, e.g. 1,4,8"),
     seed: int = typer.Option(0),
+    model_checkpoint: str | None = typer.Option(None, help="checkpoint for model-backed evaluation"),
+    model_device: str = typer.Option("cpu"),
+    model_max_new_tokens: int = typer.Option(16),
+    model_max_input_tokens: int = typer.Option(512),
+    model_seed: int = typer.Option(0),
     out_dir: str | None = typer.Option(None),
 ) -> None:
-    adapters = _select_adapters(adapter)
+    adapters = _select_adapters(
+        adapter,
+        model_checkpoint=model_checkpoint,
+        model_device=model_device,
+        model_max_new_tokens=model_max_new_tokens,
+        model_max_input_tokens=model_max_input_tokens,
+        model_seed=model_seed,
+    )
     adapter_type = _adapter_type(adapters)
     _warn_if_rule_based(adapter_type)
 
@@ -475,6 +534,7 @@ def bench_mqar(
             "query_grid": query_values,
             "seed": seed,
             "adapter_type": adapter_type,
+            "model_info": _model_info(adapters),
         },
         metrics=result,
         runner_version="v0.2",
@@ -489,13 +549,25 @@ def bench_longbench(
     tasks: str = typer.Option("single_doc_qa,multi_doc_qa,summarization,few_shot,code"),
     samples_per_task: int = typer.Option(4),
     seed: int = typer.Option(0),
+    model_checkpoint: str | None = typer.Option(None, help="checkpoint for model-backed evaluation"),
+    model_device: str = typer.Option("cpu"),
+    model_max_new_tokens: int = typer.Option(16),
+    model_max_input_tokens: int = typer.Option(512),
+    model_seed: int = typer.Option(0),
     dataset_file: str | None = typer.Option(
         None,
         help="optional JSONL dataset file with task_group/prompt/answer fields",
     ),
     out_dir: str | None = typer.Option(None),
 ) -> None:
-    adapters = _select_adapters(adapter)
+    adapters = _select_adapters(
+        adapter,
+        model_checkpoint=model_checkpoint,
+        model_device=model_device,
+        model_max_new_tokens=model_max_new_tokens,
+        model_max_input_tokens=model_max_input_tokens,
+        model_seed=model_seed,
+    )
     adapter_type = _adapter_type(adapters)
     _warn_if_rule_based(adapter_type)
     runner = get_runner("longbench")
@@ -519,6 +591,7 @@ def bench_longbench(
             "seed": seed,
             "dataset_file": dataset_file,
             "adapter_type": adapter_type,
+            "model_info": _model_info(adapters),
         },
         metrics=result,
         runner_version="v0.2",
@@ -534,13 +607,25 @@ def bench_retrieval(
     truncation_lengths: str = typer.Option("512,1024,2048,16384"),
     samples_per_dataset: int = typer.Option(4),
     seed: int = typer.Option(0),
+    model_checkpoint: str | None = typer.Option(None, help="checkpoint for model-backed evaluation"),
+    model_device: str = typer.Option("cpu"),
+    model_max_new_tokens: int = typer.Option(16),
+    model_max_input_tokens: int = typer.Option(512),
+    model_seed: int = typer.Option(0),
     dataset_file: str | None = typer.Option(
         None,
         help="optional JSONL dataset file with dataset/document/question/answer fields",
     ),
     out_dir: str | None = typer.Option(None),
 ) -> None:
-    adapters = _select_adapters(adapter)
+    adapters = _select_adapters(
+        adapter,
+        model_checkpoint=model_checkpoint,
+        model_device=model_device,
+        model_max_new_tokens=model_max_new_tokens,
+        model_max_input_tokens=model_max_input_tokens,
+        model_seed=model_seed,
+    )
     adapter_type = _adapter_type(adapters)
     _warn_if_rule_based(adapter_type)
     runner = get_runner("retrieval")
@@ -566,6 +651,7 @@ def bench_retrieval(
             "seed": seed,
             "dataset_file": dataset_file,
             "adapter_type": adapter_type,
+            "model_info": _model_info(adapters),
         },
         metrics=result,
         runner_version="v0.2",

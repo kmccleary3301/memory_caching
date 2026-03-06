@@ -189,7 +189,7 @@ def test_titans_ssc_shape() -> None:
     )
     layer = MemoryCachingLayer(config=conf, backend=TitansBackend(conf.titans))
     _id(layer)
-    y, cache = layer(torch.randn(1, 6, 8), return_cache=True)
+    y, cache = layer.forward_with_cache(torch.randn(1, 6, 8))
     assert y.shape == (1, 6, 8)
     assert len(cache) == 3
 

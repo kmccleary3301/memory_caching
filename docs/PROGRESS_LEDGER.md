@@ -1,54 +1,37 @@
 # Progress Ledger
 
-Date: 2026-03-05
+Date: 2026-03-06
 
-## Weight model
+## Checklist interpretation
 
-- Phase 0: 10%
-- Phase 1: 25%
-- Phase 2: 25%
-- Phase 3: 20%
-- Phase 4: 15%
-- Phase 5: 5%
+- Historical weighted-completion percentages in this repository refer to an internal engineering checklist.
+- They do not imply scientific reproduction completeness.
 
-## Current phase completions
+## Historical engineering checklist closeout
 
-- phase_0_completion: 100%
-- phase_1_completion: 100%
-- phase_2_completion: 100%
-- phase_3_completion: 100%
-- phase_4_completion: 100%
-- phase_5_completion: 100%
+- Closed engineering checklist status: **complete**
+- Historical weighted completion at closeout: **100.00%**
 
-## Weighted computation
+## Current scientific status
 
-Overall =
+- Scientific reproduction status: **substantially unblocked, but not full paper parity**
+- Public-package readiness status: **substantially improved, but not yet release-complete**
 
-- 0.10 * 1.00
-- 0.25 * 1.00
-- 0.25 * 1.00
-- 0.20 * 1.00
-- 0.15 * 1.00
-- 0.05 * 1.00
+## Latest milestone update (2026-03-06)
 
-Total: **100.00%**
-
-## Latest milestone update (2026-03-05)
-
-- Full paper-scale execution script completed on CUDA for `pilot_full`, `mid_full`, and `target_full`.
-- Full benchmark/report chain completed (NIAH, MQAR, LongBench, retrieval).
-- Final integrity and release checks passed:
+- The current planner-derived post-critique tranche crossed the `>90%` overall completion threshold.
+- Scientific model-backed benchmark execution completed for NIAH, MQAR, LongBench, and retrieval using truthful manifests and non-smoke targets.
+- Historical pre-model-backed `full_dataset` artifacts were isolated from the active scientific artifact root so aggregate scientific reports are no longer mixed with legacy rule-based outputs.
+- Final validation checks passed:
   - `claim_evidence_lint: PASS`
-  - `release gate v1: PASS`
+  - `engineering_release_gate_v1: PASS`
+  - `scientific_release_gate_v1: PASS`
+  - `install_smoke: PASS`
+  - `phase2.sh: PASS`
+  - `pytest: 119 passed`
 
-## Planner checklist closeout (2026-03-05)
+## Remaining blocked work
 
-- Planner-derived P0/P1/P2 completion status: **100.0%**
-- Remaining in-scope planner items: **none**
-- Remaining blocked work is explicitly out-of-scope for this checklist (for example, model-backed paper-metric parity and Log-Linear++).
-
-## Update rule
-
-1. Update each phase completion.
-2. Use `scripts/reports/update_progress.py`.
-3. Publish updated bars in this file and `docs/reproduction_report.md`.
+- literal paper-parity work remains outstanding, especially missing paper baselines such as `Log-Linear++`
+- final public-release polish remains outstanding, mainly release-boundary decisions such as license/publication closeout
+- a green scientific gate still does not imply full paper-table parity

@@ -71,6 +71,10 @@ def write_artifacts(
         "git_commit": _git_commit(),
         "runner_version": runner_version,
         "dataset_revision": dataset_revision,
+        "adapter_type": str(
+            metrics.get("adapter_type", config.get("adapter_type", "unknown"))
+        ),
+        "model_info": config.get("model_info"),
         "config": config,
         "metrics_file": str(bundle.metrics_path),
         "rows_file": str(bundle.rows_path),

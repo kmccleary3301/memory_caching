@@ -8,3 +8,10 @@ checkpoint_dir: artifacts/checkpoints/target
 lr: 0.0003
 d_model: 128
 vocab_size: 32768
+model_family: tiny_mc_lm
+num_heads: 8
+backend: linear
+aggregation: grm
+segment_size: 16
+segmentation: constant
+state_init_mode: checkpoint

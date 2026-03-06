@@ -71,3 +71,34 @@ Capability matrix: `docs/BACKEND_CAPABILITY_MATRIX.md`.
 - Wrapper and backend mechanics are test-backed implementation claims.
 - Rule-based adapter benchmarks are harness checks, not model-quality validation.
 - Paper-metric parity remains blocked unless model-backed evidence is present.
+
+## Public package surface vs repo tooling
+
+The stable package surface is intentionally smaller than the repo surface.
+
+Stable import surface:
+
+- `memory_caching.MCConfig`
+- `memory_caching.MemoryCachingLayer`
+- `memory_caching.SegmentCache`
+- `memory_caching.LinearMemoryBackend`
+- `memory_caching.DLABackend`
+- `memory_caching.TitansBackend`
+- `memory_caching.SWLABackend`
+
+Repo-only or research tooling surface:
+
+- `memory_caching.smoke`
+- CLI commands under `mc`
+- benchmark adapters and runners
+- report generation and release-gate scripts
+
+`MemoryCachingLayer.forward()` exposes only the runtime tensor path. Cache retrieval and debug inspection use explicit side-channel methods: `forward_with_cache()` and `inspect()`.
+
+## Backend claim boundaries
+
+- `linear` is the wrapper's unnormalized matrix-memory reference backend, not a full normalized linear-attention baseline.
+- `dla`, `titans`, and `swla` are implemented as mechanism-oriented reference backends with test-backed wrapper integration.
+- `titans` and `swla` currently use constant scalar coefficients where the paper presents time-indexed coefficients.
+- `swla` is implemented as the current `c=2` recurrence path with previous-outer-product carry, and should be described as such.
+- Backends remain lightweight protocol objects rather than `nn.Module` subclasses for now. That is a deliberate package-boundary choice, not an assertion that the API is final.

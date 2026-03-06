@@ -4,6 +4,7 @@ from .adapters import (
     LinearMCAdapter,
     ModelBackedAdapter,
     TitansMCAdapter,
+    make_checkpoint_model_backed_adapter,
     make_model_backed_adapter,
 )
 from .artifacts import ArtifactBundle, create_bundle, write_artifacts
@@ -31,6 +32,7 @@ __all__ = [
     "BenchmarkAdapter",
     "ModelBackedAdapter",
     "make_model_backed_adapter",
+    "make_checkpoint_model_backed_adapter",
     "LinearMCAdapter",
     "DLAMCAdapter",
     "TitansMCAdapter",

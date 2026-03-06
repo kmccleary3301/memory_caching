@@ -330,7 +330,7 @@ class MemoryCachingLayer(nn.Module):
 
         return []
 
-    def forward(
+    def _forward_impl(
         self,
         x: Tensor,
         *,
@@ -563,3 +563,64 @@ class MemoryCachingLayer(nn.Module):
         if return_debug:
             return y, debug_rows
         return y
+
+    def forward(
+        self,
+        x: Tensor,
+        *,
+        segment_size: int | None = None,
+        segment_lengths: Sequence[int] | None = None,
+        attention_mask: Tensor | None = None,
+        state_init_mode: StateInitMode | None = None,
+    ) -> Tensor:
+        """Stable runtime path: return only the transformed sequence."""
+
+        return self._forward_impl(
+            x,
+            segment_size=segment_size,
+            segment_lengths=segment_lengths,
+            attention_mask=attention_mask,
+            state_init_mode=state_init_mode,
+        )
+
+    def forward_with_cache(
+        self,
+        x: Tensor,
+        *,
+        segment_size: int | None = None,
+        segment_lengths: Sequence[int] | None = None,
+        attention_mask: Tensor | None = None,
+        state_init_mode: StateInitMode | None = None,
+    ) -> tuple[Tensor, list[SegmentCache]]:
+        """Inspection path: return output plus cached segment checkpoints."""
+
+        y, cache = self._forward_impl(
+            x,
+            segment_size=segment_size,
+            segment_lengths=segment_lengths,
+            attention_mask=attention_mask,
+            state_init_mode=state_init_mode,
+            return_cache=True,
+        )
+        return y, cache
+
+    def inspect(
+        self,
+        x: Tensor,
+        *,
+        segment_size: int | None = None,
+        segment_lengths: Sequence[int] | None = None,
+        attention_mask: Tensor | None = None,
+        state_init_mode: StateInitMode | None = None,
+    ) -> tuple[Tensor, list[dict[str, Any]]]:
+        """Inspection path: return output plus per-token routing/debug rows."""
+
+        y, debug_rows = self._forward_impl(
+            x,
+            segment_size=segment_size,
+            segment_lengths=segment_lengths,
+            attention_mask=attention_mask,
+            state_init_mode=state_init_mode,
+            return_debug=True,
+        )
+        return y, debug_rows

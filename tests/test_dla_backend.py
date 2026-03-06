@@ -128,8 +128,8 @@ def test_dla_checkpoint_vs_restart_cache_lifecycle() -> None:
     _identity(rst)
 
     x = torch.randn(1, 8, 8)
-    y_ckp, cache_ckp = ckp(x, return_cache=True)
-    y_rst, cache_rst = rst(x, return_cache=True)
+    y_ckp, cache_ckp = ckp.forward_with_cache(x)
+    y_rst, cache_rst = rst.forward_with_cache(x)
 
     assert len(cache_ckp) == len(cache_rst) == 4
     assert not torch.allclose(y_ckp, y_rst, atol=1e-7)

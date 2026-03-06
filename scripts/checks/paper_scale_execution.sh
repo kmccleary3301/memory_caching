@@ -26,6 +26,11 @@ LONG_BENCH_SAMPLES_PER_TASK=${LONG_BENCH_SAMPLES_PER_TASK:-128}
 RETRIEVAL_DATASETS=${RETRIEVAL_DATASETS:-swde,squad,fda}
 RETRIEVAL_TRUNCATION_LENGTHS=${RETRIEVAL_TRUNCATION_LENGTHS:-512,1024,2048,16384}
 RETRIEVAL_SAMPLES_PER_DATASET=${RETRIEVAL_SAMPLES_PER_DATASET:-128}
+BENCH_ADAPTER=${BENCH_ADAPTER:-model}
+BENCH_MODEL_DEVICE=${BENCH_MODEL_DEVICE:-cpu}
+BENCH_MODEL_MAX_NEW_TOKENS=${BENCH_MODEL_MAX_NEW_TOKENS:-16}
+BENCH_MODEL_MAX_INPUT_TOKENS=${BENCH_MODEL_MAX_INPUT_TOKENS:-512}
+SCIENTIFIC_TARGETS_YAML=${SCIENTIFIC_TARGETS_YAML:-configs/bench/scientific_targets.yaml}
 
 LONG_BENCH_DATASET_FILE=${LONG_BENCH_DATASET_FILE:-}
 RETRIEVAL_DATASET_FILE=${RETRIEVAL_DATASET_FILE:-}
@@ -145,7 +150,12 @@ uv run python scripts/reports/training_parity_table.py \
   --out-md "${TRAIN_PARITY_MD}"
 
 uv run mc bench niah \
-  --adapter all \
+  --adapter "${BENCH_ADAPTER}" \
+  --model-checkpoint "artifacts/checkpoints/${TARGET_PROFILE}/step_${TARGET_STEP_TAG}.pt" \
+  --model-device "${BENCH_MODEL_DEVICE}" \
+  --model-max-new-tokens "${BENCH_MODEL_MAX_NEW_TOKENS}" \
+  --model-max-input-tokens "${BENCH_MODEL_MAX_INPUT_TOKENS}" \
+  --model-seed "${SEED}" \
   --tasks "${NIAH_TASKS}" \
   --context-lengths "${NIAH_CONTEXT_LENGTHS}" \
   --samples-per-length "${NIAH_SAMPLES_PER_LENGTH}" \
@@ -153,7 +163,12 @@ uv run mc bench niah \
   --out-dir "${BENCH_ROOT}/niah"
 
 uv run mc bench mqar \
-  --adapter all \
+  --adapter "${BENCH_ADAPTER}" \
+  --model-checkpoint "artifacts/checkpoints/${TARGET_PROFILE}/step_${TARGET_STEP_TAG}.pt" \
+  --model-device "${BENCH_MODEL_DEVICE}" \
+  --model-max-new-tokens "${BENCH_MODEL_MAX_NEW_TOKENS}" \
+  --model-max-input-tokens "${BENCH_MODEL_MAX_INPUT_TOKENS}" \
+  --model-seed "${SEED}" \
   --samples "${MQAR_SAMPLES}" \
   --pair-grid "${MQAR_PAIR_GRID}" \
   --query-grid "${MQAR_QUERY_GRID}" \
@@ -161,7 +176,12 @@ uv run mc bench mqar \
   --out-dir "${BENCH_ROOT}/mqar"
 
 uv run mc bench longbench \
-  --adapter all \
+  --adapter "${BENCH_ADAPTER}" \
+  --model-checkpoint "artifacts/checkpoints/${TARGET_PROFILE}/step_${TARGET_STEP_TAG}.pt" \
+  --model-device "${BENCH_MODEL_DEVICE}" \
+  --model-max-new-tokens "${BENCH_MODEL_MAX_NEW_TOKENS}" \
+  --model-max-input-tokens "${BENCH_MODEL_MAX_INPUT_TOKENS}" \
+  --model-seed "${SEED}" \
   --tasks "${LONG_BENCH_TASKS}" \
   --samples-per-task "${LONG_BENCH_SAMPLES_PER_TASK}" \
   --seed "${SEED}" \
@@ -169,7 +189,12 @@ uv run mc bench longbench \
   --out-dir "${BENCH_ROOT}/longbench"
 
 uv run mc bench retrieval \
-  --adapter all \
+  --adapter "${BENCH_ADAPTER}" \
+  --model-checkpoint "artifacts/checkpoints/${TARGET_PROFILE}/step_${TARGET_STEP_TAG}.pt" \
+  --model-device "${BENCH_MODEL_DEVICE}" \
+  --model-max-new-tokens "${BENCH_MODEL_MAX_NEW_TOKENS}" \
+  --model-max-input-tokens "${BENCH_MODEL_MAX_INPUT_TOKENS}" \
+  --model-seed "${SEED}" \
   --datasets "${RETRIEVAL_DATASETS}" \
   --truncation-lengths "${RETRIEVAL_TRUNCATION_LENGTHS}" \
   --samples-per-dataset "${RETRIEVAL_SAMPLES_PER_DATASET}" \
@@ -184,7 +209,7 @@ uv run python scripts/reports/benchmark_trend.py \
   --out-md "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.md"
 uv run python scripts/reports/parity_dashboard.py \
   --trend-json "outputs/reports/full_dataset_benchmark_trend${REPORT_SUFFIX}.json" \
-  --targets-yaml configs/bench/smoke_targets.yaml \
+  --targets-yaml "${SCIENTIFIC_TARGETS_YAML}" \
   --out-json "outputs/reports/full_dataset_parity_dashboard${REPORT_SUFFIX}.json" \
   --out-md "outputs/reports/full_dataset_parity_dashboard${REPORT_SUFFIX}.md"
 uv run python scripts/reports/stat_summary.py \

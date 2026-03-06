@@ -2,9 +2,34 @@ from __future__ import annotations
 
 import json
 
+import torch
 from typer.testing import CliRunner
 
 from memory_caching.cli import app
+from memory_caching.models import build_tiny_model_from_spec
+
+
+def _write_tiny_mc_checkpoint(path) -> str:
+    model_spec = {
+        "model_family": "tiny_mc_lm",
+        "vocab_size": 256,
+        "d_model": 8,
+        "num_heads": 2,
+        "backend": "linear",
+        "aggregation": "grm",
+        "segment_size": 2,
+    }
+    model = build_tiny_model_from_spec(model_spec)
+    checkpoint = path / "tiny_mc.pt"
+    torch.save(
+        {
+            "model_spec": model_spec,
+            "model_state": model.state_dict(),
+            "global_step": 1,
+        },
+        checkpoint,
+    )
+    return str(checkpoint)
 
 
 def test_bench_niah_warns_for_rule_based_adapter_and_emits_adapter_type() -> None:
@@ -74,3 +99,37 @@ def test_debug_layer_emits_schema_and_non_empty_rows() -> None:
         assert rows[0]["cached_count"] >= 0
         assert isinstance(rows[0]["router_weights"], list)
         assert len(rows[0]["router_weights"]) >= 1
+
+
+def test_bench_niah_model_backed_emits_model_backed_adapter_type(tmp_path) -> None:
+    runner = CliRunner()
+    checkpoint = _write_tiny_mc_checkpoint(tmp_path)
+    result = runner.invoke(
+        app,
+        [
+            "bench",
+            "niah",
+            "--adapter",
+            "model",
+            "--model-checkpoint",
+            checkpoint,
+            "--model-device",
+            "cpu",
+            "--tasks",
+            "s_niah_1",
+            "--context-lengths",
+            "64",
+            "--samples-per-length",
+            "1",
+            "--seed",
+            "0",
+            "--out-dir",
+            str(tmp_path / "bench_out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    json_start = result.output.find("{")
+    assert json_start >= 0
+    payload = json.loads(result.output[json_start:])
+    assert payload["adapter_type"] == "model_backed"

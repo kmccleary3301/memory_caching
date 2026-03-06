@@ -5,7 +5,7 @@
 - MC configuration schema and validation.
 - Segmentation modes: constant and logarithmic.
 - MC wrapper with aggregations: residual, GRM, soup, SSC.
-- Backends: linear, DLA, Titans, SWLA(c=2).
+- Backends: linear matrix-memory, DLA, Titans, SWLA(c=2).
 - State init modes: checkpoint and restart.
 - Benchmark harnesses: NIAH, MQAR, LongBench scaffold, retrieval scaffold.
 - CLI commands for smoke and benchmark runs.
@@ -18,7 +18,7 @@
 - Paper-equation analytic invariants (RM/GRM/Soup/SSC + segmentation decomposition).
 - Backend contract guards and negative-path validation.
 - DLA/Titans objective/update behavior and graph-mode checks.
-- SWLA recurrence and state-mixing equivalence checks.
+- SWLA Eq. (28)-style recurrence and state-mixing equivalence checks.
 - Inner-update batch/head invariance checks (DLA/Titans).
 - Differentiable inner-update temporal gradient-flow checks (DLA/Titans).
 - Rule-based adapter warning and metadata emission in benchmark CLI.
@@ -26,6 +26,8 @@
 ## Implemented with explicit caveats
 
 - Benchmark adapters default to rule-based compatibility adapters unless model-backed adapters are wired.
+- The linear backend is an unnormalized matrix-memory backend rather than a full normalized kernel linear-attention baseline.
+- DLA, Titans, and SWLA currently use constant scalar coefficients/configured update parameters rather than paper-scale learned or time-dependent schedules.
 - `soup` on non-mixable backends requires explicit fallback opt-in (`allow_output_mixture_fallback=true`).
 - Smoke-target dashboards are harness checks, not paper-metric parity evidence.
 

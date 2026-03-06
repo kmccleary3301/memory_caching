@@ -8,3 +8,10 @@ checkpoint_dir: artifacts/checkpoints/pilot
 lr: 0.0005
 d_model: 64
 vocab_size: 32768
+model_family: tiny_mc_lm
+num_heads: 4
+backend: linear
+aggregation: grm
+segment_size: 16
+segmentation: constant
+state_init_mode: checkpoint

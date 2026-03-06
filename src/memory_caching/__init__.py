@@ -1,12 +1,11 @@
-"""Memory Caching reproduction package."""
+"""Core Memory Caching package surface."""
 
 from .backends.dla import DLABackend
 from .backends.linear import LinearMemoryBackend
 from .backends.swla import SWLABackend
 from .backends.titans import TitansBackend
 from .config import DLAConfig, MCConfig, SWLAConfig, TitansConfig
-from .layer import MemoryCachingLayer
-from .smoke import run_smoke_eval, run_smoke_train
+from .layer import MemoryCachingLayer, SegmentCache
 
 __all__ = [
     "__version__",
@@ -15,12 +14,11 @@ __all__ = [
     "SWLAConfig",
     "MCConfig",
     "MemoryCachingLayer",
+    "SegmentCache",
     "LinearMemoryBackend",
     "DLABackend",
     "SWLABackend",
     "TitansBackend",
-    "run_smoke_train",
-    "run_smoke_eval",
 ]
 
 __version__ = "0.1.0"

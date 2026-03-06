@@ -3,14 +3,21 @@ from __future__ import annotations
 import json
 
 import pytest
+import torch
 
-from memory_caching.bench.adapters import DLAMCAdapter, LinearMCAdapter, TitansMCAdapter
+from memory_caching.bench.adapters import (
+    DLAMCAdapter,
+    LinearMCAdapter,
+    TitansMCAdapter,
+    make_checkpoint_model_backed_adapter,
+)
 from memory_caching.bench.artifacts import create_bundle, write_artifacts
 from memory_caching.bench.config import BenchmarkConfig
 from memory_caching.bench.longbench import longbench_metric_for_task_group, score_longbench
 from memory_caching.bench.mqar import generate_mqar_examples, score_mqar
 from memory_caching.bench.niah import generate_niah_examples, normalize_answer
 from memory_caching.bench.retrieval import score_retrieval
+from memory_caching.models import build_tiny_model_from_spec
 from memory_caching.bench.runner import (
     get_runner,
     list_runners,
@@ -19,6 +26,29 @@ from memory_caching.bench.runner import (
     run_niah_suite,
     run_retrieval_suite,
 )
+
+
+def _write_tiny_mc_checkpoint(tmp_path) -> str:
+    model_spec = {
+        "model_family": "tiny_mc_lm",
+        "vocab_size": 256,
+        "d_model": 8,
+        "num_heads": 2,
+        "backend": "linear",
+        "aggregation": "grm",
+        "segment_size": 2,
+    }
+    model = build_tiny_model_from_spec(model_spec)
+    checkpoint = tmp_path / "tiny_mc.pt"
+    torch.save(
+        {
+            "model_spec": model_spec,
+            "model_state": model.state_dict(),
+            "global_step": 1,
+        },
+        checkpoint,
+    )
+    return str(checkpoint)
 
 
 def test_benchmark_config_validation() -> None:
@@ -221,6 +251,27 @@ def test_run_retrieval_suite_with_dataset_file(tmp_path) -> None:
     assert len(result["rows"]) == 1
 
 
+def test_make_checkpoint_model_backed_adapter_and_run_niah(tmp_path) -> None:
+    checkpoint = _write_tiny_mc_checkpoint(tmp_path)
+    adapter = make_checkpoint_model_backed_adapter(
+        checkpoint_path=checkpoint,
+        device="cpu",
+        max_new_tokens=4,
+        max_input_tokens=32,
+        seed=0,
+    )
+    result = run_niah_suite(
+        adapters=[adapter],
+        tasks=["s_niah_1"],
+        context_lengths=[64],
+        samples_per_length=1,
+        seed=0,
+    )
+    assert result["benchmark"] == "niah"
+    assert len(result["rows"]) == 1
+    assert result["rows"][0]["adapter"] == adapter.name
+
+
 @pytest.mark.parametrize("bad_len", [0, -1])
 def test_retrieval_invalid_truncation_raises(bad_len: int) -> None:
     with pytest.raises(ValueError):
@@ -249,9 +300,21 @@ def test_artifact_bundle_writes_manifest_metrics_rows_csv_report(tmp_path) -> No
     metrics = {
         "benchmark": "niah",
         "mean_accuracy": 1.0,
+        "adapter_type": "model_backed",
         "rows": [{"adapter": "linear-mc", "accuracy": 1.0}],
     }
-    cfg = {"adapter": "all", "samples_per_length": 4}
+    cfg = {
+        "adapter": "model",
+        "samples_per_length": 4,
+        "adapter_type": "model_backed",
+        "model_info": {
+            "model_family": "tiny_mc_lm",
+            "checkpoint_path": "/tmp/example.pt",
+            "tokenizer_kind": "byte",
+            "device": "cpu",
+            "generation_mode": "greedy",
+        },
+    }
 
     write_artifacts(
         bundle=bundle,
@@ -269,6 +332,8 @@ def test_artifact_bundle_writes_manifest_metrics_rows_csv_report(tmp_path) -> No
     assert manifest["schema_version"] == "v1"
     assert manifest["run_type"] == "niah"
     assert manifest["config"] == cfg
+    assert manifest["adapter_type"] == "model_backed"
+    assert manifest["model_info"]["model_family"] == "tiny_mc_lm"
     assert manifest["metrics_file"] == str(bundle.metrics_path)
     assert manifest["runner_version"] == "v0.2"
     assert manifest["dataset_revision"] == "synthetic-v2"

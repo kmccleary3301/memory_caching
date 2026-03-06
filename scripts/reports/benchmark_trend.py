@@ -28,6 +28,10 @@ def _load_entry(manifest_path: Path) -> dict[str, Any]:
 
     metrics = _read_json(metrics_path)
     mean_accuracy = float(metrics.get("mean_accuracy", 0.0))
+    adapter_type = str(
+        metrics.get("adapter_type", manifest.get("adapter_type", manifest.get("config", {}).get("adapter_type", "unknown")))
+    )
+    model_info = manifest.get("model_info", manifest.get("config", {}).get("model_info"))
 
     return {
         "run_type": run_type,
@@ -37,6 +41,8 @@ def _load_entry(manifest_path: Path) -> dict[str, Any]:
         "runner_version": str(manifest.get("runner_version", "unknown")),
         "dataset_revision": str(manifest.get("dataset_revision", "unknown")),
         "mean_accuracy": mean_accuracy,
+        "adapter_type": adapter_type,
+        "model_info": model_info,
     }
 
 

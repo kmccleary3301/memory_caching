@@ -12,16 +12,16 @@ Tensor = torch.Tensor
 
 @dataclass(frozen=True)
 class SWLAState:
-    """Second-order SWLA state."""
+    """Paper-faithful SWLA(c=2) state."""
     m_prev: Tensor
-    m_prev2: Tensor
+    prev_outer: Tensor
 
 
 class SWLABackend:
     """
     SWLA(c=2) backend.
 
-      M_t = alpha * M_{t-1} + beta * M_{t-2} + lam * (v_t k_t^T)
+      M_t = alpha * M_{t-1} + beta * (v_{t-1} k_{t-1}^T) + lam * (v_t k_t^T)
       y_t = M_t q_t
     """
 
@@ -45,16 +45,16 @@ class SWLABackend:
             device=device,
             dtype=dtype,
         )
-        return SWLAState(m_prev=zeros.clone(), m_prev2=zeros.clone())
+        return SWLAState(m_prev=zeros.clone(), prev_outer=zeros.clone())
 
     def update(self, state: SWLAState, k_t: Tensor, v_t: Tensor) -> SWLAState:
         outer = torch.einsum("bhd,bhe->bhde", v_t, k_t)
         m_t = (
             self.config.alpha * state.m_prev
-            + self.config.beta * state.m_prev2
+            + self.config.beta * state.prev_outer
             + self.config.lam * outer
         )
-        return SWLAState(m_prev=m_t, m_prev2=state.m_prev)
+        return SWLAState(m_prev=m_t, prev_outer=outer)
 
     def apply(self, state: SWLAState, q_t: Tensor) -> Tensor:
         return torch.einsum("bhde,bhe->bhd", state.m_prev, q_t)
@@ -64,7 +64,7 @@ class SWLABackend:
             raise ValueError("states must be non-empty")
 
         stacked_prev = torch.stack([s.m_prev for s in states], dim=2)
-        stacked_prev2 = torch.stack([s.m_prev2 for s in states], dim=2)
+        stacked_prev_outer = torch.stack([s.prev_outer for s in states], dim=2)
         mixed_prev = torch.einsum("bhs,bhsde->bhde", weights, stacked_prev)
-        mixed_prev2 = torch.einsum("bhs,bhsde->bhde", weights, stacked_prev2)
-        return SWLAState(m_prev=mixed_prev, m_prev2=mixed_prev2)
+        mixed_prev_outer = torch.einsum("bhs,bhsde->bhde", weights, stacked_prev_outer)
+        return SWLAState(m_prev=mixed_prev, prev_outer=mixed_prev_outer)

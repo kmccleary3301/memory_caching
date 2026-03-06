@@ -141,7 +141,7 @@ def _next_token_loss_and_accuracy(
 def _cache_stats(model: TinyMCLanguageModel, tokens: torch.Tensor) -> tuple[int, float]:
     with torch.no_grad():
         embeds = model.token_embed(tokens)
-        _, cache = model.mc(embeds, return_cache=True)
+        _, cache = model.mc.forward_with_cache(embeds)
 
     cache_segments = len(cache)
     mean_len = 0.0

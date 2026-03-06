@@ -13,6 +13,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import yaml
 
+from memory_caching.models import build_tiny_model_from_spec
+from memory_caching.scientific_manifest import build_train_manifest
+
 
 class TinyLM(nn.Module):
     def __init__(self, vocab_size: int, d_model: int) -> None:
@@ -119,7 +122,7 @@ def _lr_for_step(
 def _save_checkpoint(
     *,
     path: Path,
-    model: TinyLM,
+    model: nn.Module,
     optimizer: torch.optim.Optimizer,
     config_path: Path,
     run_name: str,
@@ -131,6 +134,10 @@ def _save_checkpoint(
     scheduler_state: dict[str, Any],
     optim_config: dict[str, Any],
     step_metrics_tail: list[dict[str, Any]],
+    model_spec: dict[str, Any],
+    uses_memory_caching: bool,
+    backend: str | None,
+    aggregation: str | None,
 ) -> None:
     payload = {
         "schema_version": "v1",
@@ -138,8 +145,11 @@ def _save_checkpoint(
         "run_name": run_name,
         "global_step": global_step,
         "config_path": str(config_path),
-        "backend_type": "tiny_lm",
-        "aggregation_type": "n/a",
+        "backend_type": backend or "none",
+        "aggregation_type": aggregation or "n/a",
+        "model_family": str(model_spec.get("model_family", "tiny_lm")),
+        "uses_memory_caching": bool(uses_memory_caching),
+        "model_spec": model_spec,
         "sequence_length": sequence_length,
         "batch_size": batch_size,
         "seed": seed,
@@ -162,8 +172,11 @@ def _save_checkpoint(
                 "run_name": run_name,
                 "global_step": global_step,
                 "config_path": str(config_path),
-                "backend_type": "tiny_lm",
-                "aggregation_type": "n/a",
+                "backend_type": backend or "none",
+                "aggregation_type": aggregation or "n/a",
+                "model_family": str(model_spec.get("model_family", "tiny_lm")),
+                "uses_memory_caching": bool(uses_memory_caching),
+                "model_spec": model_spec,
                 "sequence_length": sequence_length,
                 "batch_size": batch_size,
                 "seed": seed,
@@ -283,6 +296,13 @@ def main() -> None:
     d_model = int(cfg.get("d_model", 64))
     vocab_size = int(cfg.get("vocab_size", 32768))
     effective_seq_len = min(cfg_seq_len, int(args.max_seq_len))
+    model_family = str(cfg.get("model_family", "tiny_mc_lm")).strip().lower()
+    num_heads = int(cfg.get("num_heads", 4))
+    backend = str(cfg.get("backend", "linear")).strip().lower()
+    aggregation = str(cfg.get("aggregation", "grm")).strip().lower()
+    segment_size = int(cfg.get("segment_size", 16))
+    segmentation = str(cfg.get("segmentation", "constant")).strip().lower()
+    state_init_mode = str(cfg.get("state_init_mode", "checkpoint")).strip().lower()
 
     schedule = str(optim_cfg.get("schedule", "cosine")).strip().lower()
     base_lr = float(cfg.get("lr", optim_cfg.get("base_lr", 1e-3)))
@@ -301,7 +321,9 @@ def main() -> None:
     generator.manual_seed(args.seed)
 
     stream = _load_token_stream(data_dir)
+    used_synthetic_fallback = False
     if len(stream) < effective_seq_len + 2:
+        used_synthetic_fallback = True
         stream = _build_synthetic_tokens(
             length=max(8192, effective_seq_len * 16),
             vocab_size=vocab_size,
@@ -313,7 +335,25 @@ def main() -> None:
 
     stream_max = max(stream) if len(stream) > 0 else 0
     dynamic_vocab_size = max(vocab_size, stream_max + 2)
-    model = TinyLM(vocab_size=dynamic_vocab_size, d_model=d_model).to(device)
+    model_spec: dict[str, Any] = {
+        "model_family": model_family,
+        "vocab_size": dynamic_vocab_size,
+        "d_model": d_model,
+    }
+    uses_memory_caching = model_family == "tiny_mc_lm"
+    if uses_memory_caching:
+        model_spec.update(
+            {
+                "num_heads": num_heads,
+                "backend": backend,
+                "aggregation": aggregation,
+                "segment_size": segment_size,
+                "segmentation": segmentation,
+                "state_init_mode": state_init_mode,
+            }
+        )
+    base_model = build_tiny_model_from_spec(model_spec).to(device)
+    model = base_model
     compile_requested = bool(args.compile)
     compile_enabled = False
     compile_error: str | None = None
@@ -327,12 +367,12 @@ def main() -> None:
         if args.compile_dynamic:
             compile_kwargs["dynamic"] = True
         try:
-            model = torch.compile(model, **compile_kwargs)
+            model = torch.compile(base_model, **compile_kwargs)
             compile_enabled = True
         except Exception as exc:
             compile_error = str(exc)
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        base_model.parameters(),
         lr=base_lr,
         weight_decay=weight_decay,
         betas=(float(betas[0]), float(betas[1])),
@@ -357,7 +397,7 @@ def main() -> None:
     if resume_from is not None:
         global_step, losses, scheduler_state_loaded, step_metrics_loaded = _restore_checkpoint(
             path=resume_from,
-            model=model,
+            model=base_model,
             optimizer=optimizer,
         )
         scheduler_state.update(scheduler_state_loaded)
@@ -374,7 +414,7 @@ def main() -> None:
     initial_ckpt = ckpt_dir / f"step_{global_step:06d}.pt"
     _save_checkpoint(
         path=initial_ckpt,
-        model=model,
+        model=base_model,
         optimizer=optimizer,
         config_path=cfg_path,
         run_name=run_name,
@@ -406,6 +446,10 @@ def main() -> None:
             "compile_error": compile_error,
         },
         step_metrics_tail=step_metrics,
+        model_spec=model_spec,
+        uses_memory_caching=uses_memory_caching,
+        backend=backend if uses_memory_caching else None,
+        aggregation=aggregation if uses_memory_caching else None,
     )
 
     model.train()
@@ -494,7 +538,7 @@ def main() -> None:
         if should_save:
             _save_checkpoint(
                 path=ckpt_dir / f"step_{global_step:06d}.pt",
-                model=model,
+                model=base_model,
                 optimizer=optimizer,
                 config_path=cfg_path,
                 run_name=run_name,
@@ -526,6 +570,10 @@ def main() -> None:
                     "compile_error": compile_error,
                 },
                 step_metrics_tail=step_metrics,
+                model_spec=model_spec,
+                uses_memory_caching=uses_memory_caching,
+                backend=backend if uses_memory_caching else None,
+                aggregation=aggregation if uses_memory_caching else None,
             )
 
     metrics_path = ckpt_dir / "train_metrics.jsonl"
@@ -537,50 +585,67 @@ def main() -> None:
     if device.type == "cuda":
         max_memory_mb = float(torch.cuda.max_memory_allocated(device=device) / (1024**2))
 
-    meta = {
-        "stage": "train",
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "config": str(cfg_path),
-        "optim_config": str(optim_cfg_path),
-        "data_dir": args.data_dir,
-        "checkpoint_dir": str(ckpt_dir),
-        "checkpoint_file": str(ckpt_dir / f"step_{global_step:06d}.pt"),
-        "global_step": global_step,
-        "seed": args.seed,
-        "resume_from": str(resume_from) if resume_from is not None else None,
-        "run_name": run_name,
-        "requested_steps": requested_steps,
-        "executed_steps": effective_steps,
-        "sequence_length": effective_seq_len,
-        "batch_size": cfg_batch_size,
-        "vocab_size": dynamic_vocab_size,
-        "base_lr": base_lr,
-        "schedule": schedule,
-        "warmup_steps": warmup_steps,
-        "grad_accum_steps": args.grad_accum_steps,
-        "clip_grad_norm": args.clip_grad_norm,
-        "amp": bool(args.amp and device.type == "cuda"),
-        "deterministic": bool(args.deterministic),
-        "compile_requested": compile_requested,
-        "compile_enabled": compile_enabled,
-        "compile_mode": args.compile_mode,
-        "compile_backend": compile_backend,
-        "compile_fullgraph": bool(args.compile_fullgraph),
-        "compile_dynamic": bool(args.compile_dynamic),
-        "matmul_precision": args.matmul_precision,
-        "compile_error": compile_error,
-        "device": str(device),
-        "save_every": save_every,
-        "loss_start": loss_start,
-        "loss_end": loss_end,
-        "loss_delta": (loss_start - loss_end) if losses else 0.0,
-        "loss_tail": losses[-20:],
-        "metrics_file": str(metrics_path),
-        "avg_step_time_s": float(sum(step_times) / len(step_times)) if step_times else 0.0,
-        "avg_tokens_per_s": float(sum(tokens_per_s) / len(tokens_per_s)) if tokens_per_s else 0.0,
-        "max_memory_mb": max_memory_mb,
-        "checkpoint_files": [str(p) for p in sorted(ckpt_dir.glob("step_*.pt"))],
-    }
+    meta = build_train_manifest(
+        model_family=model_family,
+        uses_memory_caching=uses_memory_caching,
+        checkpoint_path=str(ckpt_dir / f"step_{global_step:06d}.pt"),
+        tokenizer={
+            "kind": "byte",
+            "vocab_limit": 256,
+            "model_vocab_size": dynamic_vocab_size,
+        },
+        config_path=str(cfg_path),
+        backend=backend if uses_memory_caching else None,
+        aggregation=aggregation if uses_memory_caching else None,
+        seed=args.seed,
+        training_data={
+            "source": args.data_dir,
+            "source_type": "synthetic_fallback" if used_synthetic_fallback else "token_stream_jsonl",
+            "used_synthetic_fallback": used_synthetic_fallback,
+        },
+        architecture=model_spec,
+        extra={
+            "stage": "train",
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "optim_config": str(optim_cfg_path),
+            "data_dir": args.data_dir,
+            "checkpoint_dir": str(ckpt_dir),
+            "global_step": global_step,
+            "resume_from": str(resume_from) if resume_from is not None else None,
+            "run_name": run_name,
+            "requested_steps": requested_steps,
+            "executed_steps": effective_steps,
+            "sequence_length": effective_seq_len,
+            "batch_size": cfg_batch_size,
+            "vocab_size": dynamic_vocab_size,
+            "base_lr": base_lr,
+            "schedule": schedule,
+            "warmup_steps": warmup_steps,
+            "grad_accum_steps": args.grad_accum_steps,
+            "clip_grad_norm": args.clip_grad_norm,
+            "amp": bool(args.amp and device.type == "cuda"),
+            "deterministic": bool(args.deterministic),
+            "compile_requested": compile_requested,
+            "compile_enabled": compile_enabled,
+            "compile_mode": args.compile_mode,
+            "compile_backend": compile_backend,
+            "compile_fullgraph": bool(args.compile_fullgraph),
+            "compile_dynamic": bool(args.compile_dynamic),
+            "matmul_precision": args.matmul_precision,
+            "compile_error": compile_error,
+            "device": str(device),
+            "save_every": save_every,
+            "loss_start": loss_start,
+            "loss_end": loss_end,
+            "loss_delta": (loss_start - loss_end) if losses else 0.0,
+            "loss_tail": losses[-20:],
+            "metrics_file": str(metrics_path),
+            "avg_step_time_s": float(sum(step_times) / len(step_times)) if step_times else 0.0,
+            "avg_tokens_per_s": float(sum(tokens_per_s) / len(tokens_per_s)) if tokens_per_s else 0.0,
+            "max_memory_mb": max_memory_mb,
+            "checkpoint_files": [str(p) for p in sorted(ckpt_dir.glob("step_*.pt"))],
+        },
+    )
     Path("artifacts/train_manifest.json").parent.mkdir(parents=True, exist_ok=True)
     Path("artifacts/train_manifest.json").write_text(
         json.dumps(meta, indent=2, sort_keys=True) + "\n"

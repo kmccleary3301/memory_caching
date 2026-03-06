@@ -1,0 +1,4 @@
+schema_version: v0
+status: blocked_placeholder
+baseline: Log-Linear++
+reason: "Missing paper baseline. Full table-level paper parity remains blocked until this baseline is implemented and evaluated."

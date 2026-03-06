@@ -17,6 +17,21 @@ Date: 2026-03-06
 - Scientific reproduction status: **substantially unblocked, but not full paper parity**
 - Public-package readiness status: **substantially improved, but not yet release-complete**
 
+## Current weighted progress snapshot
+
+- Weighting model:
+  - `P0` critical faithfulness blockers: `30%`
+  - `P1` trust-surface correction: `20%`
+  - `P2` release/package realism: `30%`
+  - `P3` scientific-faithfulness unblockers: `20%`
+- Phase progress:
+  - `P0`: `100.0%` `[##############################]`
+  - `P1`: `100.0%` `[##############################]`
+  - `P2`: `96.0%` `[#############################-]`
+  - `P3`: `72.0%` `[######################--------]`
+- Overall planner-derived completion:
+  - `93.2%` `[############################--]`
+
 ## Latest milestone update (2026-03-06)
 
 - The current planner-derived post-critique tranche crossed the `>90%` overall completion threshold.

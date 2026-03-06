@@ -87,6 +87,7 @@ Onboarding acceptance criteria:
 - `docs/CONTRIBUTOR_DRY_RUN.md`
 - `docs/CONTRIBUTING.md`
 - `docs/ARCHITECTURE.md`
+- `docs/PUBLIC_API.md`
 - `docs/ENV_COMPAT_MATRIX.md`
 - `docs/CLAIM_TO_EVIDENCE_MATRIX.md`
 - `docs/CLAIM_BOUNDARY.md`

@@ -1,4 +1,9 @@
-"""Core Memory Caching package surface."""
+"""Stable public Memory Caching package surface.
+
+Top-level exports are limited to the supported runtime API. CLI entrypoints,
+smoke helpers, benchmark runners, and report-generation tooling remain repo
+tooling and are intentionally excluded from this surface.
+"""
 
 from .backends.dla import DLABackend
 from .backends.linear import LinearMemoryBackend

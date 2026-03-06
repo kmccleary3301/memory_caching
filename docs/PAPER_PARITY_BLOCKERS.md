@@ -1,47 +1,66 @@
 # Paper-Parity Blockers
 
+<div align="center">
+
+<a href="../README.md"><img alt="Project" src="https://img.shields.io/badge/project-memory--caching-2088FF"></a>
+<a href="./reproduction_report.md"><img alt="Reproduction" src="https://img.shields.io/badge/reproduction-scaffolded-blue"></a>
+<a href="./CLAIM_BOUNDARY.md"><img alt="Parity" src="https://img.shields.io/badge/paper%20parity-blocked-important"></a>
+
+</div>
+
 Date: 2026-03-06
 
 This document tracks the remaining blockers between the repository's current
 state and a literal paper-parity claim for the Memory Caching paper.
 
-## Current status
+---
 
-- Engineering scaffold status: green
-- Scientific-gate status: green
-- Paper-parity status: blocked
+## Current Status
 
-## Active blockers
+| Area | Status |
+|---|---|
+| Engineering scaffold | `Green` |
+| Scientific gate | `Green` |
+| Full paper parity | `Blocked` |
+
+---
+
+## Active Blockers
 
 ### 1. Missing paper baselines
 
-- `Log-Linear++` is not implemented in this repository.
-- Placeholder tracking file:
-  - `configs/train/log_linear_pp.placeholder.yaml`
-- Consequence:
-  - no full table-level parity claim is currently supportable
+| Blocker | Current state | Consequence |
+|---|---|---|
+| `Log-Linear++` | not implemented | no full table-level parity claim is supportable |
 
-### 2. Current scientific runs are tracking runs, not full paper-scale parity runs
+Tracking placeholder:
 
-- The current scientific artifact set uses truthful manifests, non-smoke
-  tracking targets, and model-backed adapters.
-- That is enough for scientific-gate integrity.
-- It is not enough for a claim that the repository reproduces all paper-reported
-  results at full table scale.
+- `configs/train/log_linear_pp.placeholder.yaml`
 
-### 3. Backend simplifications remain documented but not fully parity-closed
+### 2. Current scientific runs are tracking runs, not full table-scale parity runs
 
-- The linear backend is an unnormalized matrix-memory reference path.
-- DLA, Titans, and SWLA still use configured constant coefficients rather than a
-  paper-matched learned or time-dependent schedule.
-- These are documented implementation choices, but they remain paper-parity
-  limitations until explicitly closed.
+- the current scientific artifact set uses:
+  - truthful manifests
+  - non-smoke tracking targets
+  - model-backed adapters
+- that is enough for scientific-gate integrity
+- it is not enough for a claim that all paper-reported results have been
+  reproduced at full scale
 
-## Exit criteria for removing this blocker
+### 3. Backend simplifications remain documented parity limits
 
-- Implement `Log-Linear++` as a first-class baseline.
-- Add training/eval configs for the missing paper baseline set.
-- Re-run full model-backed paper-scale experiments against the relevant tasks.
-- Update parity tables and claim-boundary docs to reflect the new evidence.
-- Re-review the repository for any remaining backend-level deviations that still
-  block literal paper-parity claims.
+- the linear backend is an unnormalized matrix-memory reference path
+- DLA, Titans, and SWLA still use configured constant coefficients rather than
+  a paper-matched learned or time-dependent schedule
+- these are documented implementation choices, but they remain parity limits
+  until explicitly closed
+
+---
+
+## Exit Criteria
+
+- implement `Log-Linear++` as a first-class baseline
+- add training and evaluation configs for the missing paper baseline set
+- re-run full model-backed paper-scale experiments against the relevant tasks
+- update parity tables and claim-boundary docs with the new evidence
+- re-review remaining backend deviations before making any literal parity claim

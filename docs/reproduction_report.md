@@ -1,66 +1,117 @@
-# Engineering Reproduction Scaffold Report
+# Reproduction Report
 
-Date: 2026-03-05  
-Target paper: *Memory Caching: RNNs with Growing Memory* (arXiv:2602.24281v1)
+<div align="center">
 
-## Scope statement
+<a href="../README.md"><img alt="Project" src="https://img.shields.io/badge/project-memory--caching-2088FF"></a>
+<a href="./CLAIM_TO_EVIDENCE_MATRIX.md"><img alt="Claim Discipline" src="https://img.shields.io/badge/claims-evidence%20mapped-2ea44f"></a>
+<a href="./PAPER_PARITY_BLOCKERS.md"><img alt="Paper Parity" src="https://img.shields.io/badge/paper%20parity-blocked-important"></a>
 
-This repository is currently an engineering scaffold focused on mechanism-level implementation and validation of the Memory Caching wrapper. It is not a paper-metric parity report.
+</div>
 
-## What this report supports
+Date: 2026-03-06  
+Target paper: *Memory Caching: RNNs with Growing Memory* (`arXiv:2602.24281v1`)
 
-- MC wrapper mechanics are implemented and unit-tested:
-  - segmentation,
-  - recurrent state update and segment caching,
-  - RM/GRM/Soup/SSC aggregation paths.
-- Linear (unnormalized matrix-memory), DLA, and Titans reference backends are implemented with backend-level tests.
-- SWLA(c=2) backend is implemented with paper-equation recurrence/state-mixing tests and constant scalar coefficients.
-- Inner-update faithfulness checks now include:
-  - batch/head scaling invariance,
-  - differentiable-mode temporal gradient-flow coverage,
-  - explicit Titans update-convention testing.
-- Benchmark harness/reporting infrastructure is implemented and reproducible as a scaffold.
+This repository currently supports a strong engineering and mechanism-faithfulness
+story for the Memory Caching wrapper. It does not yet support a literal claim of
+full paper-table parity.
 
-## What this report does not support
+---
 
-- Full paper benchmark parity claims.
-- Throughput parity claims against paper systems.
-- Exact equivalence with unpublished author internals.
-- Coverage claims for missing paper baselines (Log-Linear++).
+## Status Snapshot
 
-## Public claim discipline
+| Scope | Status |
+|---|---|
+| Stable PyPI package surface | `Live` |
+| MC wrapper implementation | `Implemented` |
+| Engineering gate | `Green` |
+| Scientific gate | `Green` |
+| Full paper parity | `Blocked` |
 
-- Any benchmark run produced with default rule-based adapters is harness validation, not model-quality evidence.
-- Smoke-target dashboards are calibration checks against repository-defined targets, not paper-reported targets.
-- Scientific release claims remain blocked until model-backed full-corpus runs are complete.
+---
 
-## Latest execution evidence (2026-03-05)
+## What This Repository Supports
 
-- A scaffold execution script (`scripts/checks/paper_scale_execution.sh`, legacy name retained) completed engineering validation runs on CUDA through:
-  - `pilot_full` (1000 steps),
-  - `mid_full` (5000 steps),
-  - `target_full` (10000 steps).
-- Periodic eval hooks completed for each final checkpoint in the repository training scaffold.
-- Benchmark harnesses were executed in synthetic or dataset-file mode for NIAH, MQAR, LongBench, and retrieval.
-- Unless an artifact explicitly records `adapter_type="model_backed"` and non-smoke targets, those outputs should be read as infrastructure checks, not model-quality evidence.
-- Evidence bundles and release gates passed:
-  - `validate_evidence_bundle` (full benchmark root),
-  - `claim_evidence_lint: PASS`,
-  - `engineering_release_gate_v1: PASS`.
-- Scientific release gate remains blocked pending model-backed evidence and non-smoke targets.
+### Mechanism-level implementation
 
-## Checklist status (2026-03-05)
+- the Memory Caching wrapper is implemented with:
+  - segmentation
+  - recurrent state update and segment caching
+  - RM / GRM / Soup / SSC aggregation paths
+- supported backends include:
+  - `linear`
+  - `dla`
+  - `titans`
+  - `swla(c=2)`
 
-- Closed engineering checklist status: complete.
-- Scientific reproduction status: incomplete.
-- Remaining blocked work includes:
-  - model-backed paper-metric parity work,
-  - corrected scientific release gating,
-  - missing paper baselines such as Log-Linear++.
+### Backend and inner-update coverage
 
-## What a green scientific gate still does not prove
+- backend-level tests exist for the implemented reference backends
+- SWLA(c=2) is covered by paper-equation recurrence/state-mixing tests
+- inner-update faithfulness coverage includes:
+  - batch/head scaling invariance
+  - differentiable-mode temporal gradient-flow coverage
+  - explicit Titans update-convention testing
 
-- It does not prove full paper parity.
-- It does not prove missing paper baselines such as `Log-Linear++`.
-- It does not prove throughput parity against the paper's reported systems.
-- It does not prove exact equivalence with unpublished author internals.
+### Reproduction tooling
+
+- benchmark runners exist for:
+  - NIAH
+  - MQAR
+  - LongBench
+  - retrieval
+- model-backed scientific artifacts, truthful manifests, release gates, and
+  artifact reports are in place
+
+---
+
+## What This Repository Does Not Support
+
+- full paper benchmark parity claims
+- throughput parity claims against the paper systems
+- exact equivalence with unpublished author internals
+- coverage claims for missing paper baselines such as `Log-Linear++`
+
+---
+
+## Scientific Evidence Boundaries
+
+| Statement | Interpretation |
+|---|---|
+| `engineering scaffold` | packaging, tests, artifact plumbing, release mechanics |
+| `scientific evidence` | model-backed artifacts with non-smoke targets and truthful manifests |
+| `paper parity` | faithful reproduction of the paper's reported baselines, metrics, and missing comparison rows |
+
+Important consequence:
+
+- default rule-based adapters are harness checks, not model-quality evidence
+- smoke-target dashboards are repository calibration targets, not paper-reported targets
+- a green scientific gate is stricter than the engineering scaffold, but still
+  not the same thing as paper parity
+
+---
+
+## Current Evidence Position
+
+| Area | Current state |
+|---|---|
+| Training scaffold | real checkpoint artifacts written |
+| Benchmark path | model-backed path implemented |
+| Manifests | truthful train and benchmark manifests |
+| Targets | non-smoke scientific targets supported |
+| Claim discipline | explicit matrix + boundary docs in place |
+| Missing baseline coverage | still blocked |
+
+See also:
+
+- [CLAIM_TO_EVIDENCE_MATRIX.md](CLAIM_TO_EVIDENCE_MATRIX.md)
+- [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md)
+- [PAPER_PARITY_BLOCKERS.md](PAPER_PARITY_BLOCKERS.md)
+
+---
+
+## What a Green Scientific Gate Still Does Not Prove
+
+- full paper parity
+- missing paper baselines such as `Log-Linear++`
+- throughput parity against the paper's reported systems
+- exact equivalence with unpublished author internals

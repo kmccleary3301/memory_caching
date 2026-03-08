@@ -42,8 +42,8 @@ No claim in this document should use `paper-scale`, `parity`, or `full-dataset` 
 
 | blocked_claim | why_blocked | required_evidence_to_unblock |
 |---|---|---|
-| Full paper-metric parity across all tables/tasks | Log-Linear++ not implemented and paper-scale model-backed runs are not complete | Implement missing baselines + full paper-scale model-backed eval runs |
+| Full paper-metric parity across all tables/tasks | `LogLinearPP` baseline presence is no longer the blocker, but baseline evaluation evidence and paper-scale model-backed runs are not complete | Evaluate `LogLinearPP` + complete paper-scale model-backed eval runs |
 | Throughput parity against paper systems | No dedicated normalized perf harness | Hardware-normalized benchmark harness and published runs |
 | Exact parity with unpublished author internals | Author reference implementation unavailable | Author release/confirmation or exact official code comparison |
 | Scientific release status for current scaffold outputs | Current benchmark evidence is dominated by rule-based adapters and smoke targets | Model-backed metrics, non-smoke targets, and Memory-Caching model manifests |
-| Table-level parity claims without missing paper baselines | Missing baselines such as `Log-Linear++` remain open | Implement and evaluate the missing baseline set |
+| Table-level parity claims without complete baseline evidence | `LogLinearPP` exists as a baseline preset/config family, but evaluation evidence remains open | Implement and evaluate the missing baseline evidence set |

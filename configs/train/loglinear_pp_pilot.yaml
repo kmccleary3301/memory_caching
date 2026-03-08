@@ -1,0 +1,17 @@
+name: loglinear_pp_pilot
+seq_len: 4096
+batch_size: 4
+steps: 1000
+save_every: 100
+eval_every: 100
+checkpoint_dir: artifacts/checkpoints/loglinear_pp_pilot
+lr: 0.0005
+d_model: 64
+vocab_size: 32768
+model_family: tiny_mc_lm
+num_heads: 4
+backend: linear
+aggregation: grm
+segment_size: 16
+segmentation: logarithmic
+state_init_mode: checkpoint

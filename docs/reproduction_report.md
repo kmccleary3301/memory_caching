@@ -61,6 +61,9 @@ full paper-table parity.
   - retrieval
 - model-backed scientific artifacts, truthful manifests, release gates, and
   artifact reports are in place
+- repository-level log-linear work now includes:
+  - explicit `LogLinearPP` baseline preset/config family
+  - original `LogLinearAttention` reference namespace with dense and recurrent correctness paths
 
 ---
 
@@ -69,7 +72,7 @@ full paper-table parity.
 - full paper benchmark parity claims
 - throughput parity claims against the paper systems
 - exact equivalence with unpublished author internals
-- coverage claims for missing paper baselines such as `Log-Linear++`
+- coverage claims for baseline families that are present but not yet fully evaluated for parity
 
 ---
 
@@ -99,7 +102,7 @@ Important consequence:
 | Manifests | truthful train and benchmark manifests |
 | Targets | non-smoke scientific targets supported |
 | Claim discipline | explicit matrix + boundary docs in place |
-| Missing baseline coverage | still blocked |
+| Missing baseline coverage | `LogLinearPP` now present as a baseline preset, but parity evidence remains blocked |
 
 See also:
 
@@ -112,6 +115,7 @@ See also:
 ## What a Green Scientific Gate Still Does Not Prove
 
 - full paper parity
-- missing paper baselines such as `Log-Linear++`
+- `LogLinearPP` is now implemented as a baseline preset, but not yet sufficient for table-level parity claims
+- original Guo et al. `LogLinearAttention` remains a separate future implementation target
 - throughput parity against the paper's reported systems
 - exact equivalence with unpublished author internals

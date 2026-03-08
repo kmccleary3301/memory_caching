@@ -31,11 +31,20 @@ state and a literal paper-parity claim for the Memory Caching paper.
 
 | Blocker | Current state | Consequence |
 |---|---|---|
-| `Log-Linear++` | not implemented | no full table-level parity claim is supportable |
+| `LogLinearPP` | implemented as baseline preset/config family, not fully evaluated | no full table-level parity claim is supportable |
+
+Related note:
+
+- an original `LogLinearAttention` correctness-first reference namespace now
+  exists, but that is not the same thing as complete baseline evidence for the
+  Memory Caching paper.
 
 Tracking placeholder:
 
 - `configs/train/log_linear_pp.placeholder.yaml`
+- `configs/train/loglinear_pp_pilot.yaml`
+- `configs/train/loglinear_pp_mid.yaml`
+- `configs/train/loglinear_pp_target.yaml`
 
 ### 2. Current scientific runs are tracking runs, not full table-scale parity runs
 
@@ -59,7 +68,8 @@ Tracking placeholder:
 
 ## Exit Criteria
 
-- implement `Log-Linear++` as a first-class baseline
+- complete benchmark/evaluation evidence for `LogLinearPP`
+- mature the original `LogLinearAttention` path beyond reference correctness if parity scope requires it
 - add training and evaluation configs for the missing paper baseline set
 - re-run full model-backed paper-scale experiments against the relevant tasks
 - update parity tables and claim-boundary docs with the new evidence

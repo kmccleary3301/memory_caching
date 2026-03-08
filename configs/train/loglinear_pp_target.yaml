@@ -1,0 +1,17 @@
+name: loglinear_pp_target
+seq_len: 16384
+batch_size: 1
+steps: 10000
+save_every: 500
+eval_every: 500
+checkpoint_dir: artifacts/checkpoints/loglinear_pp_target
+lr: 0.0003
+d_model: 128
+vocab_size: 32768
+model_family: tiny_mc_lm
+num_heads: 8
+backend: linear
+aggregation: grm
+segment_size: 16
+segmentation: logarithmic
+state_init_mode: checkpoint

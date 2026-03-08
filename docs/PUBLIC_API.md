@@ -59,6 +59,19 @@ These remain repository tooling rather than stable package API:
 
 ---
 
+## Namespaced Reference Surfaces
+
+The package currently includes namespaced reference/research modules that are
+not yet part of the stable top-level API:
+
+- `memory_caching.baselines.LogLinearPP`
+- `memory_caching.loglinear.LogLinearAttentionReference`
+
+These modules are present for research and parity work, but their current
+stability promise is weaker than the top-level imports listed above.
+
+---
+
 ## Canonical Published Examples
 
 - `examples/minimal_layer.py`

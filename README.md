@@ -50,7 +50,7 @@ memory_caching/
 | Backends | `linear`, `dla`, `titans`, `swla(c=2)` |
 | Scientific artifact path | Model-backed, truthful manifests, non-smoke targets |
 | Public release status | Publishable package surface with explicit release preflight |
-| Full paper parity | Still blocked by missing baselines such as `Log-Linear++` |
+| Full paper parity | Still blocked by incomplete baseline evidence and larger parity gaps |
 
 ---
 
@@ -136,6 +136,11 @@ Full API notes:
 
 - [PUBLIC_API.md](docs/PUBLIC_API.md)
 
+Namespaced experimental/reference modules now present in the package:
+
+- `memory_caching.baselines.LogLinearPP`
+- `memory_caching.loglinear.LogLinearAttentionReference`
+
 ---
 
 ## Documentation Navigator
@@ -153,6 +158,8 @@ Full API notes:
 | Documentation index | [docs/README.md](docs/README.md) | Fast entrypoint to the full doc set |
 | Reproduction status | [reproduction_report.md](docs/reproduction_report.md) | What is implemented, what is blocked |
 | Public runtime API | [PUBLIC_API.md](docs/PUBLIC_API.md) | Stable import surface and boundaries |
+| Log-linear terminology | [LOG_LINEAR_TERMINOLOGY.md](docs/LOG_LINEAR_TERMINOLOGY.md) | Separates `LogLinearPP` from original `LogLinearAttention` |
+| LogLinearPP baseline | [LOG_LINEAR_PP_BASELINE.md](docs/LOG_LINEAR_PP_BASELINE.md) | MC-paper baseline preset semantics |
 | Architecture | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layer flow, backend roles, artifact pipeline |
 | Claim discipline | [CLAIM_TO_EVIDENCE_MATRIX.md](docs/CLAIM_TO_EVIDENCE_MATRIX.md) | Claim-to-evidence mapping |
 | Claim boundaries | [CLAIM_BOUNDARY.md](docs/CLAIM_BOUNDARY.md) | What is explicitly out of claim scope |
@@ -205,7 +212,8 @@ not the same as `paper parity`.
 What a green scientific gate still does not prove:
 
 - full paper parity
-- missing paper baselines such as `Log-Linear++`
+- full evaluation evidence for `LogLinearPP`
+- original `LogLinearAttention` remains a separate future mechanism track
 - throughput parity or unpublished internal-author equivalence
 
 Backend-specific limits also remain important:
@@ -239,6 +247,11 @@ Stable published examples:
 
 - [examples/minimal_layer.py](examples/minimal_layer.py)
 - [examples/inspect_layer.py](examples/inspect_layer.py)
+
+Current namespaced research/reference surfaces:
+
+- `memory_caching.baselines.LogLinearPP`
+- `memory_caching.loglinear.LogLinearAttentionReference`
 
 Sample subset dataset files included for benchmark dry runs:
 

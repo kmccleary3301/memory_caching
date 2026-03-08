@@ -13,4 +13,5 @@
 - Paper-metric parity across all benchmarks.
 - Throughput parity with paper infrastructure.
 - Exact implementation equivalence with unpublished author training internals.
-- Log-Linear++ coverage claims (until that baseline is implemented and validated).
+- `LogLinearPP` parity claims beyond baseline presence (until benchmark/evaluation evidence exists).
+- Original `LogLinearAttention` claims (until that separate mechanism family is implemented and validated).

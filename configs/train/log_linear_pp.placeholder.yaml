@@ -1,4 +1,9 @@
-schema_version: v0
-status: blocked_placeholder
-baseline: Log-Linear++
-reason: "Missing paper baseline. Full table-level paper parity remains blocked until this baseline is implemented and evaluated."
+schema_version: v1
+status: implemented_baseline_family
+baseline: LogLinearPP
+mechanism_note: "Memory Caching paper baseline preset: MC wrapper + GRM + logarithmic segmentation."
+configs:
+  - configs/train/loglinear_pp_pilot.yaml
+  - configs/train/loglinear_pp_mid.yaml
+  - configs/train/loglinear_pp_target.yaml
+remaining_blocker: "Implementation is present, but baseline evaluation and table-level parity evidence remain outstanding."

@@ -36,8 +36,9 @@ state and a literal paper-parity claim for the Memory Caching paper.
 Related note:
 
 - an original `LogLinearAttention` correctness-first reference namespace now
-  exists, but that is not the same thing as complete baseline evidence for the
-  Memory Caching paper.
+  exists, including a correctness-first chunked executor, but that is not the
+  same thing as complete baseline evidence for the Memory Caching paper or the
+  original paper's optimized chunk-scan training story.
 
 Tracking placeholder:
 

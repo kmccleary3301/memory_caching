@@ -3,11 +3,14 @@ from __future__ import annotations
 import torch
 
 from memory_caching.loglinear import (
+    ChunkedLogLinearAttentionReference,
     LogLinearAttentionReference,
+    chunked_loglinear_attention,
     dense_loglinear_attention,
     hierarchical_level_index,
     recurrent_loglinear_attention,
 )
+from memory_caching.loglinear.chunked_reference import ChunkedLogLinearAttentionReferenceConfig
 from memory_caching.loglinear.recurrent_reference import LogLinearAttentionReferenceConfig
 
 
@@ -93,6 +96,70 @@ def test_state_carry_matches_full_forward() -> None:
 def test_reference_module_forward_shape() -> None:
     module = LogLinearAttentionReference(
         LogLinearAttentionReferenceConfig(dim=16, heads=4, max_levels=4)
+    )
+    x = torch.randn(2, 8, 16)
+    y = module(x)
+    assert y.shape == x.shape
+
+
+def test_dense_manual_hand_case_t3() -> None:
+    q = torch.ones(1, 4, 1, 1)
+    k = torch.ones(1, 4, 1, 1)
+    v = torch.tensor([[[[1.0]], [[2.0]], [[4.0]], [[8.0]]]])
+    lambda_levels = torch.zeros(1, 4, 1, 4)
+    lambda_levels[0, 3, 0, 0] = 10.0
+    lambda_levels[0, 3, 0, 1] = 100.0
+    lambda_levels[0, 3, 0, 2] = 1000.0
+
+    out = dense_loglinear_attention(q, k, v, lambda_levels)
+
+    assert out[0, 3, 0, 0].item() == 3480.0
+
+
+def test_chunked_matches_recurrent_reference() -> None:
+    torch.manual_seed(4)
+    q = torch.randn(2, 9, 3, 4)
+    k = torch.randn(2, 9, 3, 4)
+    v = torch.randn(2, 9, 3, 5)
+    lambda_levels = torch.rand(2, 9, 3, 5)
+    attention_mask = torch.tensor(
+        [
+            [True, True, True, False, True, True, True, True, False],
+            [True, False, True, True, True, False, True, True, True],
+        ]
+    )
+
+    recurrent, recurrent_state = recurrent_loglinear_attention(
+        q,
+        k,
+        v,
+        lambda_levels,
+        attention_mask=attention_mask,
+    )
+    chunked, chunked_state = chunked_loglinear_attention(
+        q,
+        k,
+        v,
+        lambda_levels,
+        chunk_size=3,
+        attention_mask=attention_mask,
+    )
+
+    assert torch.allclose(recurrent, chunked, atol=1e-6, rtol=1e-6)
+    assert len(recurrent_state.batch_states) == len(chunked_state.batch_states)
+    for lhs, rhs in zip(recurrent_state.batch_states, chunked_state.batch_states):
+        assert lhs.position == rhs.position
+        assert len(lhs.buckets) == len(rhs.buckets)
+        for lhs_bucket, rhs_bucket in zip(lhs.buckets, rhs.buckets):
+            assert lhs_bucket.size == rhs_bucket.size
+            assert lhs_bucket.start == rhs_bucket.start
+            assert lhs_bucket.end == rhs_bucket.end
+            assert torch.allclose(lhs_bucket.summary, rhs_bucket.summary, atol=1e-6, rtol=1e-6)
+
+
+def test_chunked_reference_module_forward_shape() -> None:
+    module = ChunkedLogLinearAttentionReference(
+        ChunkedLogLinearAttentionReferenceConfig(dim=16, heads=4, max_levels=4, chunk_size=4)
     )
     x = torch.randn(2, 8, 16)
     y = module(x)

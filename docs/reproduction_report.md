@@ -63,7 +63,7 @@ full paper-table parity.
   artifact reports are in place
 - repository-level log-linear work now includes:
   - explicit `LogLinearPP` baseline preset/config family
-  - original `LogLinearAttention` reference namespace with dense and recurrent correctness paths
+  - original `LogLinearAttention` reference namespace with dense, recurrent, and correctness-first chunked reference paths
 
 ---
 

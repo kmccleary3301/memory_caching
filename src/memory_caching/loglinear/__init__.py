@@ -5,6 +5,11 @@ It is intentionally separate from the Memory Caching paper's LogLinearPP
 baseline preset.
 """
 
+from .chunked_reference import (
+    ChunkedLogLinearAttentionReference,
+    ChunkedLogLinearAttentionReferenceConfig,
+    chunked_loglinear_attention,
+)
 from .dense_oracle import dense_loglinear_attention
 from .fenwick import (
     fenwick_prefix_buckets,
@@ -27,6 +32,9 @@ __all__ = [
     "timestep_buckets",
     "hierarchical_level_index",
     "dense_loglinear_attention",
+    "chunked_loglinear_attention",
     "recurrent_loglinear_attention",
     "LogLinearAttentionReference",
+    "ChunkedLogLinearAttentionReference",
+    "ChunkedLogLinearAttentionReferenceConfig",
 ]

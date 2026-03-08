@@ -252,6 +252,7 @@ Current namespaced research/reference surfaces:
 
 - `memory_caching.baselines.LogLinearPP`
 - `memory_caching.loglinear.LogLinearAttentionReference`
+- `memory_caching.loglinear.ChunkedLogLinearAttentionReference`
 
 Sample subset dataset files included for benchmark dry runs:
 

@@ -66,6 +66,7 @@ not yet part of the stable top-level API:
 
 - `memory_caching.baselines.LogLinearPP`
 - `memory_caching.loglinear.LogLinearAttentionReference`
+- `memory_caching.loglinear.ChunkedLogLinearAttentionReference`
 
 These modules are present for research and parity work, but their current
 stability promise is weaker than the top-level imports listed above.

@@ -6,7 +6,7 @@
 - Segmentation modes: constant and logarithmic.
 - MC wrapper with aggregations: residual, GRM, soup, SSC.
 - `LogLinearPP` baseline preset/module over the MC wrapper.
-- Original `LogLinearAttention` reference namespace with Fenwick helpers, dense oracle, and recurrent reference path.
+- Original `LogLinearAttention` reference namespace with Fenwick helpers, dense oracle, recurrent reference path, and correctness-first chunked executor.
 - Backends: linear matrix-memory, DLA, Titans, SWLA(c=2).
 - State init modes: checkpoint and restart.
 - Benchmark harnesses: NIAH, MQAR, LongBench scaffold, retrieval scaffold.
@@ -35,5 +35,5 @@
 
 ## Not implemented (paper coverage gaps)
 
-- Full chunkwise / optimized original `LogLinearAttention` training path.
+- Optimized or chunk-scan-parity original `LogLinearAttention` training path.
 - Paper-scale model-backed benchmark parity and throughput parity evidence.

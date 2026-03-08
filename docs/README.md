@@ -34,6 +34,7 @@ what this reproduction does and does not prove.
 | Public package surface | [PUBLIC_API.md](PUBLIC_API.md) | Stable runtime API and non-public repo tooling |
 | Log-linear terminology | [LOG_LINEAR_TERMINOLOGY.md](LOG_LINEAR_TERMINOLOGY.md) | Naming and scope boundary for `LogLinearPP` vs original `LogLinearAttention` |
 | LogLinearPP baseline | [LOG_LINEAR_PP_BASELINE.md](LOG_LINEAR_PP_BASELINE.md) | Meaning of the MC-paper baseline preset |
+| LogLinearAttention reference | [LOG_LINEAR_ATTENTION_REFERENCE.md](LOG_LINEAR_ATTENTION_REFERENCE.md) | Original mechanism reference-path status |
 | Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | Layer structure, backend flow, report pipeline |
 | Claim boundaries | [CLAIM_BOUNDARY.md](CLAIM_BOUNDARY.md) | What the repo explicitly does not claim |
 | Claim-to-evidence map | [CLAIM_TO_EVIDENCE_MATRIX.md](CLAIM_TO_EVIDENCE_MATRIX.md) | Exact support for each claim class |
@@ -63,6 +64,7 @@ what this reproduction does and does not prove.
 - [PAPER_PARITY_BLOCKERS.md](PAPER_PARITY_BLOCKERS.md)
 - [LOG_LINEAR_TERMINOLOGY.md](LOG_LINEAR_TERMINOLOGY.md)
 - [LOG_LINEAR_PP_BASELINE.md](LOG_LINEAR_PP_BASELINE.md)
+- [LOG_LINEAR_ATTENTION_REFERENCE.md](LOG_LINEAR_ATTENTION_REFERENCE.md)
 
 ### I want to contribute safely
 

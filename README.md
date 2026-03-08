@@ -140,6 +140,7 @@ Namespaced experimental/reference modules now present in the package:
 
 - `memory_caching.baselines.LogLinearPP`
 - `memory_caching.loglinear.LogLinearAttentionReference`
+- `memory_caching.loglinear.ChunkedLogLinearAttentionReference`
 
 ---
 
@@ -160,6 +161,7 @@ Namespaced experimental/reference modules now present in the package:
 | Public runtime API | [PUBLIC_API.md](docs/PUBLIC_API.md) | Stable import surface and boundaries |
 | Log-linear terminology | [LOG_LINEAR_TERMINOLOGY.md](docs/LOG_LINEAR_TERMINOLOGY.md) | Separates `LogLinearPP` from original `LogLinearAttention` |
 | LogLinearPP baseline | [LOG_LINEAR_PP_BASELINE.md](docs/LOG_LINEAR_PP_BASELINE.md) | MC-paper baseline preset semantics |
+| LogLinearAttention reference | [LOG_LINEAR_ATTENTION_REFERENCE.md](docs/LOG_LINEAR_ATTENTION_REFERENCE.md) | Original mechanism reference-path status |
 | Architecture | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layer flow, backend roles, artifact pipeline |
 | Claim discipline | [CLAIM_TO_EVIDENCE_MATRIX.md](docs/CLAIM_TO_EVIDENCE_MATRIX.md) | Claim-to-evidence mapping |
 | Claim boundaries | [CLAIM_BOUNDARY.md](docs/CLAIM_BOUNDARY.md) | What is explicitly out of claim scope |
@@ -247,12 +249,17 @@ Stable published examples:
 
 - [examples/minimal_layer.py](examples/minimal_layer.py)
 - [examples/inspect_layer.py](examples/inspect_layer.py)
+- [examples/loglinear_reference.py](examples/loglinear_reference.py)
+- [examples/loglinear_chunked_reference.py](examples/loglinear_chunked_reference.py)
 
 Current namespaced research/reference surfaces:
 
 - `memory_caching.baselines.LogLinearPP`
 - `memory_caching.loglinear.LogLinearAttentionReference`
 - `memory_caching.loglinear.ChunkedLogLinearAttentionReference`
+- tiny-model families:
+  - `tiny_loglinear_ref_lm`
+  - `tiny_loglinear_chunked_lm`
 
 Sample subset dataset files included for benchmark dry runs:
 

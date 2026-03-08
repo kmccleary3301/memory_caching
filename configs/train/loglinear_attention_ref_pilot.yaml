@@ -1,0 +1,13 @@
+name: loglinear_attention_ref_pilot
+seq_len: 4096
+batch_size: 4
+steps: 1000
+save_every: 100
+eval_every: 100
+checkpoint_dir: artifacts/checkpoints/loglinear_attention_ref_pilot
+lr: 0.0005
+d_model: 64
+vocab_size: 32768
+model_family: tiny_loglinear_ref_lm
+num_heads: 4
+loglinear_max_levels: 16

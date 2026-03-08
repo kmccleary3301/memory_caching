@@ -13,6 +13,9 @@ from .backends.swla import SWLABackend
 from .backends.titans import TitansBackend
 from .config import DLAConfig, MCConfig, SWLAConfig, TitansConfig
 from .layer import MemoryCachingLayer
+from .loglinear import ChunkedLogLinearAttentionReference, LogLinearAttentionReference
+from .loglinear.chunked_reference import ChunkedLogLinearAttentionReferenceConfig
+from .loglinear.recurrent_reference import LogLinearAttentionReferenceConfig
 
 
 def _build_backend(config: MCConfig):
@@ -86,12 +89,66 @@ class TinyMemoryCachingLM(nn.Module):
         return self.head(x)
 
 
+class TinyLogLinearLM(nn.Module):
+    def __init__(
+        self,
+        *,
+        vocab_size: int,
+        d_model: int,
+        num_heads: int,
+        max_levels: int,
+        chunk_size: int | None = None,
+    ) -> None:
+        super().__init__()
+        self.embed = nn.Embedding(vocab_size, d_model)
+        if chunk_size is None:
+            self.loglinear = LogLinearAttentionReference(
+                LogLinearAttentionReferenceConfig(
+                    dim=d_model,
+                    heads=num_heads,
+                    max_levels=max_levels,
+                )
+            )
+        else:
+            self.loglinear = ChunkedLogLinearAttentionReference(
+                ChunkedLogLinearAttentionReferenceConfig(
+                    dim=d_model,
+                    heads=num_heads,
+                    max_levels=max_levels,
+                    chunk_size=chunk_size,
+                )
+            )
+        self.norm = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, vocab_size, bias=False)
+
+    def forward(self, tokens: torch.Tensor) -> torch.Tensor:
+        x = self.embed(tokens)
+        x = self.loglinear(x)
+        x = self.norm(x)
+        return self.head(x)
+
+
 def build_tiny_model_from_spec(spec: Mapping[str, Any]) -> nn.Module:
     model_family = str(spec.get("model_family", "tiny_lm")).strip().lower()
     vocab_size = int(spec.get("vocab_size", 256))
     d_model = int(spec.get("d_model", 64))
     if model_family == "tiny_lm":
         return TinyLM(vocab_size=vocab_size, d_model=d_model)
+    if model_family == "tiny_loglinear_ref_lm":
+        return TinyLogLinearLM(
+            vocab_size=vocab_size,
+            d_model=d_model,
+            num_heads=int(spec.get("num_heads", 2)),
+            max_levels=int(spec.get("loglinear_max_levels", spec.get("max_levels", 8))),
+        )
+    if model_family == "tiny_loglinear_chunked_lm":
+        return TinyLogLinearLM(
+            vocab_size=vocab_size,
+            d_model=d_model,
+            num_heads=int(spec.get("num_heads", 2)),
+            max_levels=int(spec.get("loglinear_max_levels", spec.get("max_levels", 8))),
+            chunk_size=int(spec.get("loglinear_chunk_size", spec.get("chunk_size", 128))),
+        )
     if model_family != "tiny_mc_lm":
         raise ValueError(f"unsupported model_family: {model_family}")
 

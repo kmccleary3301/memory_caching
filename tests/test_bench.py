@@ -72,6 +72,28 @@ def _write_tiny_loglinear_ref_checkpoint(tmp_path) -> str:
     return str(checkpoint)
 
 
+def _write_tiny_loglinear_chunked_checkpoint(tmp_path) -> str:
+    model_spec = {
+        "model_family": "tiny_loglinear_chunked_lm",
+        "vocab_size": 256,
+        "d_model": 8,
+        "num_heads": 2,
+        "loglinear_max_levels": 8,
+        "loglinear_chunk_size": 4,
+    }
+    model = build_tiny_model_from_spec(model_spec)
+    checkpoint = tmp_path / "tiny_loglinear_chunked.pt"
+    torch.save(
+        {
+            "model_spec": model_spec,
+            "model_state": model.state_dict(),
+            "global_step": 1,
+        },
+        checkpoint,
+    )
+    return str(checkpoint)
+
+
 def test_benchmark_config_validation() -> None:
     cfg = BenchmarkConfig(
         runner="niah",
@@ -287,6 +309,21 @@ def test_make_checkpoint_model_backed_adapter_with_loglinear_ref_checkpoint(tmp_
     assert adapter.metadata["model_family"] == "tiny_loglinear_ref_lm"
 
 
+def test_make_checkpoint_model_backed_adapter_with_loglinear_chunked_checkpoint(tmp_path) -> None:
+    checkpoint = _write_tiny_loglinear_chunked_checkpoint(tmp_path)
+    adapter = make_checkpoint_model_backed_adapter(
+        checkpoint_path=checkpoint,
+        device="cpu",
+        max_new_tokens=2,
+        max_input_tokens=32,
+        seed=0,
+    )
+    prediction = adapter.predict("QUESTION: reply with ANSWER_OK\nANSWER:")
+    assert isinstance(prediction, str)
+    assert adapter.metadata is not None
+    assert adapter.metadata["model_family"] == "tiny_loglinear_chunked_lm"
+
+
 def test_make_checkpoint_model_backed_adapter_and_run_niah(tmp_path) -> None:
     checkpoint = _write_tiny_mc_checkpoint(tmp_path)
     adapter = make_checkpoint_model_backed_adapter(
@@ -376,3 +413,37 @@ def test_artifact_bundle_writes_manifest_metrics_rows_csv_report(tmp_path) -> No
     assert bundle.rows_path.exists()
     assert bundle.summary_csv_path.exists()
     assert bundle.report_md_path.exists()
+
+
+def test_artifact_bundle_preserves_loglinear_model_family(tmp_path) -> None:
+    bundle = create_bundle(str(tmp_path / "loglinear"))
+    metrics = {
+        "benchmark": "niah",
+        "mean_accuracy": 0.5,
+        "adapter_type": "model_backed",
+        "rows": [{"adapter": "tiny-loglinear", "accuracy": 0.5}],
+    }
+    cfg = {
+        "adapter": "model",
+        "samples_per_length": 1,
+        "adapter_type": "model_backed",
+        "model_info": {
+            "model_family": "tiny_loglinear_chunked_lm",
+            "checkpoint_path": "/tmp/loglinear.pt",
+            "tokenizer_kind": "byte",
+            "device": "cpu",
+            "generation_mode": "greedy",
+        },
+    }
+
+    write_artifacts(
+        bundle=bundle,
+        run_type="niah",
+        config=cfg,
+        metrics=metrics,
+        runner_version="v0.2",
+        dataset_revision="synthetic-v2",
+    )
+
+    manifest = json.loads(bundle.manifest_path.read_text())
+    assert manifest["model_info"]["model_family"] == "tiny_loglinear_chunked_lm"

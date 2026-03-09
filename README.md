@@ -252,6 +252,12 @@ Stable published examples:
 - [examples/loglinear_reference.py](examples/loglinear_reference.py)
 - [examples/loglinear_chunked_reference.py](examples/loglinear_chunked_reference.py)
 
+Pilot runner:
+
+```bash
+uv run ./scripts/checks/loglinear_pilot.sh
+```
+
 Current namespaced research/reference surfaces:
 
 - `memory_caching.baselines.LogLinearPP`

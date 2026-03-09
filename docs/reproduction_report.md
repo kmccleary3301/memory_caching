@@ -119,3 +119,17 @@ See also:
 - original Guo et al. `LogLinearAttention` remains a separate future implementation target
 - throughput parity against the paper's reported systems
 - exact equivalence with unpublished author internals
+
+---
+
+## Log-linear Pilot Evidence
+
+The repository now includes a pilot-scale model-backed lane for:
+
+- `LogLinearPP`
+- `tiny_loglinear_ref_lm`
+- `tiny_loglinear_chunked_lm`
+
+These pilot artifacts are intended to validate integration, truthful manifests,
+and claim-safe report generation. They do not establish paper-scale parity for
+either the Memory Caching paper or the original LogLinearAttention paper.

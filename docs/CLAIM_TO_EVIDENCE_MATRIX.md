@@ -24,6 +24,7 @@ No claim in this document should use `paper-scale`, `parity`, or `full-dataset` 
 | Differentiable inner-update mode has unrolled temporal gradient-flow checks | unit_test | `tests/test_dla_backend.py`, `tests/test_titans_backend.py` |
 | Backend state/tensor contracts are runtime-enforced | runtime_check_plus_unit_test | `src/memory_caching/contracts.py`, `src/memory_caching/layer.py`, `tests/test_backend_contract_guards.py` |
 | Bench CLI emits rule-based adapter warnings and adapter metadata | cli_code_plus_unit_test | `src/memory_caching/cli.py`, `tests/test_cli.py` |
+| LogLinearPP baseline preset/config family exists and is package-visible | unit_test_plus_docs | `src/memory_caching/baselines/loglinear_pp.py`, `tests/test_loglinear_pp.py`, `docs/LOG_LINEAR_PP_BASELINE.md` |
 
 ## Run-generated claims (CI or local scripts)
 
@@ -37,6 +38,7 @@ No claim in this document should use `paper-scale`, `parity`, or `full-dataset` 
 | Scientific benchmark manifests require `adapter_type=model_backed` and explicit `model_info` metadata | generated_evidence_by_scripts | `src/memory_caching/scientific_manifest.py`, `scripts/checks/scientific_manifest_lint.py`, `outputs/benchmarks/full_dataset/*/manifest.json` |
 | Scientific parity dashboards require non-smoke targets | generated_evidence_by_scripts | `configs/bench/scientific_targets.yaml`, `scripts/reports/parity_dashboard.py`, `outputs/reports/full_dataset_parity_dashboard.json` |
 | Scientific release eligibility requires both manifest lint and scientific gate success | generated_evidence_gate | `scripts/checks/scientific_manifest_lint.py`, `scripts/reports/release_gate_v1.py`, `outputs/reports/release_gate_scientific_v1.json` |
+| Log-linear pilot runner can generate model-backed pilot benchmark artifacts for baseline/reference families | generated_evidence_by_scripts | `scripts/checks/loglinear_pilot.sh`, `scripts/reports/loglinear_pilot_report.py`, `outputs/reports/loglinear_pilot_report.json` |
 
 ## Blocked scientific claims
 
@@ -47,3 +49,4 @@ No claim in this document should use `paper-scale`, `parity`, or `full-dataset` 
 | Exact parity with unpublished author internals | Author reference implementation unavailable | Author release/confirmation or exact official code comparison |
 | Scientific release status for current scaffold outputs | Current benchmark evidence is dominated by rule-based adapters and smoke targets | Model-backed metrics, non-smoke targets, and Memory-Caching model manifests |
 | Table-level parity claims without complete baseline evidence | `LogLinearPP` exists as a baseline preset/config family, but evaluation evidence remains open | Implement and evaluate the missing baseline evidence set |
+| LogLinearPP empirical parity | Baseline implementation presence is not the same thing as empirical benchmark evidence | Model-backed pilot evidence first, then paper-scale benchmark evidence |

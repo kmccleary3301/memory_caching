@@ -38,3 +38,18 @@ This path is not yet:
 
 These names are intended for repository training/eval pipelines and checkpoint
 manifests.
+
+## Implementation contract
+
+- level `0` is always the self-token contribution
+- older context is represented by an inclusive-prefix logarithmic/Fenwick decomposition
+- recurrent and chunked paths are correctness-first references for that contract
+- the chunked path is not the paper's optimized chunk-scan training implementation
+
+## Reference profiling
+
+`scripts/reports/loglinear_reference_profile.py` records small recurrent-vs-chunked
+reference timings into `outputs/reports/loglinear_reference_profile.json`.
+
+This is only a reference-implementation characterization artifact. It does not
+support any optimized-path or paper-performance parity claim.

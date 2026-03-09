@@ -112,3 +112,22 @@ sections:
           - "scripts/checks/claim_evidence_lint.py"
         symbol_coverage_reason: "Policy/docs mapping item; symbol linkage is not applicable."
         status: "implemented"
+  - name: "LogLinearPP baseline"
+    items:
+      - mechanism: "LogLinearPP baseline preset"
+        paper_anchor: "Memory Caching paper comparison baseline; distinct from original LogLinearAttention"
+        code:
+          - "src/memory_caching/baselines/loglinear_pp.py"
+          - "tests/test_loglinear_pp.py"
+          - "docs/LOG_LINEAR_PP_BASELINE.md"
+        symbols:
+          - "memory_caching.baselines.loglinear_pp::LogLinearPP"
+        status: "implemented_with_caveat"
+      - mechanism: "LogLinearPP training config family"
+        paper_anchor: "Pilot/mid/target configuration lane for the baseline"
+        code:
+          - "configs/train/loglinear_pp_pilot.yaml"
+          - "configs/train/loglinear_pp_mid.yaml"
+          - "configs/train/loglinear_pp_target.yaml"
+        symbol_coverage_reason: "Config-only mapping item; runtime symbol linkage is not applicable."
+        status: "implemented"

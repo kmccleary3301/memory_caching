@@ -77,3 +77,71 @@ def test_validate_benchmark_manifest_accepts_complete_model_backed_entry() -> No
     }
     metrics = {"adapter_type": "model_backed"}
     assert validate_benchmark_manifest(manifest, metrics) == []
+
+
+def test_validate_train_manifest_accepts_loglinear_ref_entry() -> None:
+    manifest = build_train_manifest(
+        model_family="tiny_loglinear_ref_lm",
+        uses_memory_caching=False,
+        checkpoint_path="artifacts/checkpoints/loglinear_ref/step_000001.pt",
+        tokenizer={"kind": "byte"},
+        config_path="configs/train/loglinear_attention_ref_pilot.yaml",
+        backend=None,
+        aggregation=None,
+        seed=0,
+        training_data={"source": "data/processed", "source_type": "token_stream_jsonl"},
+        architecture={
+            "model_family": "tiny_loglinear_ref_lm",
+            "d_model": 8,
+            "vocab_size": 256,
+            "num_heads": 2,
+            "loglinear_max_levels": 8,
+        },
+    )
+    assert validate_train_manifest(manifest) == []
+
+
+def test_validate_train_manifest_accepts_loglinear_chunked_entry() -> None:
+    manifest = build_train_manifest(
+        model_family="tiny_loglinear_chunked_lm",
+        uses_memory_caching=False,
+        checkpoint_path="artifacts/checkpoints/loglinear_chunked/step_000001.pt",
+        tokenizer={"kind": "byte"},
+        config_path="configs/train/loglinear_attention_chunked_pilot.yaml",
+        backend=None,
+        aggregation=None,
+        seed=0,
+        training_data={"source": "data/processed", "source_type": "token_stream_jsonl"},
+        architecture={
+            "model_family": "tiny_loglinear_chunked_lm",
+            "d_model": 8,
+            "vocab_size": 256,
+            "num_heads": 2,
+            "loglinear_max_levels": 8,
+            "loglinear_chunk_size": 4,
+        },
+    )
+    assert validate_train_manifest(manifest) == []
+
+
+def test_validate_train_manifest_rejects_loglinear_with_mc_flag() -> None:
+    manifest = build_train_manifest(
+        model_family="tiny_loglinear_ref_lm",
+        uses_memory_caching=True,
+        checkpoint_path="artifacts/checkpoints/loglinear_ref/step_000001.pt",
+        tokenizer={"kind": "byte"},
+        config_path="configs/train/loglinear_attention_ref_pilot.yaml",
+        backend=None,
+        aggregation=None,
+        seed=0,
+        training_data={"source": "data/processed", "source_type": "token_stream_jsonl"},
+        architecture={
+            "model_family": "tiny_loglinear_ref_lm",
+            "d_model": 8,
+            "vocab_size": 256,
+            "num_heads": 2,
+            "loglinear_max_levels": 8,
+        },
+    )
+    errors = validate_train_manifest(manifest)
+    assert any("uses_memory_caching=false" in err for err in errors)

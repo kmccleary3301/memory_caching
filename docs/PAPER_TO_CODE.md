@@ -3,7 +3,7 @@
 paper: Memory Caching: RNNs with Growing Memory (arXiv:2602.24281v1)
 map_source: docs/paper_to_code_map.yaml
 generated_by: scripts/reports/generate_paper_to_code.py
-generated_at_utc: 2026-03-06T07:30:56.014993+00:00
+generated_at_utc: 2026-03-09T02:10:59.837602+00:00
 
 | Section | Mechanism | Paper Anchor | Code Paths | Symbols / Coverage | Status |
 |---|---|---|---|---|---|
@@ -19,9 +19,11 @@ generated_at_utc: 2026-03-06T07:30:56.014993+00:00
 | Backends | SWLA c=2 backend | SWLA c=2 recurrence with previous-outer-product carry and constant scalar coefficients; implementation-faithful but not paper-metric validated | src/memory_caching/backends/swla.py<br>tests/test_swla_backend.py<br>tests/test_layer.py | memory_caching.backends.swla::SWLABackend | implemented_with_caveat |
 | Backends | Paper-equation analytic invariants | RM/GRM/Soup/SSC formula-level checks | tests/test_paper_equations.py<br>docs/IMPLEMENTATION_STATUS.md | Test-and-doc mapping item; no single runtime module::symbol anchor. | implemented |
 | Claims and release discipline | Claim boundary and blocked-claim policy | Public claim discipline (project policy) | docs/CLAIM_BOUNDARY.md<br>docs/CLAIM_TO_EVIDENCE_MATRIX.md<br>scripts/checks/claim_evidence_lint.py | Policy/docs mapping item; symbol linkage is not applicable. | implemented |
+| LogLinearPP baseline | LogLinearPP baseline preset | Memory Caching paper comparison baseline; distinct from original LogLinearAttention | src/memory_caching/baselines/loglinear_pp.py<br>tests/test_loglinear_pp.py<br>docs/LOG_LINEAR_PP_BASELINE.md | memory_caching.baselines.loglinear_pp::LogLinearPP | implemented_with_caveat |
+| LogLinearPP baseline | LogLinearPP training config family | Pilot/mid/target configuration lane for the baseline | configs/train/loglinear_pp_pilot.yaml<br>configs/train/loglinear_pp_mid.yaml<br>configs/train/loglinear_pp_target.yaml | Config-only mapping item; runtime symbol linkage is not applicable. | implemented |
 
-symbol_coverage_total_items: 12
-symbol_coverage_items_with_symbols: 10
-symbol_coverage_items_with_reason: 2
+symbol_coverage_total_items: 14
+symbol_coverage_items_with_symbols: 11
+symbol_coverage_items_with_reason: 3
 symbol_coverage_items_missing: 0
 

@@ -36,3 +36,13 @@ a way that is:
 
 The repository treats `LogLinearPP` as a constrained preset over the existing
 `MemoryCachingLayer`, not as a separate low-level recurrent algorithm.
+
+## Config family
+
+- `configs/train/loglinear_pp_pilot.yaml`
+- `configs/train/loglinear_pp_mid.yaml`
+- `configs/train/loglinear_pp_target.yaml`
+
+Baseline presence is not baseline evidence. Empirical parity remains blocked
+until model-backed benchmark artifacts exist and are interpreted against
+explicit targets.

@@ -53,7 +53,12 @@ def validate_train_manifest(manifest: Mapping[str, Any]) -> list[str]:
             errors.append(f"train manifest missing key: {key}")
 
     model_family = str(manifest.get("model_family", "")).strip().lower()
-    if model_family not in {"tiny_lm", "tiny_mc_lm"}:
+    if model_family not in {
+        "tiny_lm",
+        "tiny_mc_lm",
+        "tiny_loglinear_ref_lm",
+        "tiny_loglinear_chunked_lm",
+    }:
         errors.append(f"unsupported model_family: {model_family or 'missing'}")
 
     uses_memory_caching = manifest.get("uses_memory_caching")
@@ -61,8 +66,8 @@ def validate_train_manifest(manifest: Mapping[str, Any]) -> list[str]:
         errors.append("uses_memory_caching must be a boolean")
     elif model_family == "tiny_mc_lm" and uses_memory_caching is not True:
         errors.append("tiny_mc_lm manifests must record uses_memory_caching=true")
-    elif model_family == "tiny_lm" and uses_memory_caching is not False:
-        errors.append("tiny_lm manifests must record uses_memory_caching=false")
+    elif model_family in {"tiny_lm", "tiny_loglinear_ref_lm", "tiny_loglinear_chunked_lm"} and uses_memory_caching is not False:
+        errors.append(f"{model_family} manifests must record uses_memory_caching=false")
 
     tokenizer = manifest.get("tokenizer", {})
     if not isinstance(tokenizer, Mapping):
@@ -92,6 +97,14 @@ def validate_train_manifest(manifest: Mapping[str, Any]) -> list[str]:
             for key in ("backend", "aggregation", "num_heads", "segment_size"):
                 if key not in architecture:
                     errors.append(f"MC architecture missing key: {key}")
+        elif model_family == "tiny_loglinear_ref_lm":
+            for key in ("num_heads", "loglinear_max_levels"):
+                if key not in architecture:
+                    errors.append(f"loglinear ref architecture missing key: {key}")
+        elif model_family == "tiny_loglinear_chunked_lm":
+            for key in ("num_heads", "loglinear_max_levels", "loglinear_chunk_size"):
+                if key not in architecture:
+                    errors.append(f"loglinear chunked architecture missing key: {key}")
 
     if uses_memory_caching is True:
         if not str(manifest.get("backend", "")).strip():

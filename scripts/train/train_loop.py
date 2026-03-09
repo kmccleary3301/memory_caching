@@ -352,6 +352,21 @@ def main() -> None:
                 "state_init_mode": state_init_mode,
             }
         )
+    elif model_family == "tiny_loglinear_ref_lm":
+        model_spec.update(
+            {
+                "num_heads": num_heads,
+                "loglinear_max_levels": int(cfg.get("loglinear_max_levels", 8)),
+            }
+        )
+    elif model_family == "tiny_loglinear_chunked_lm":
+        model_spec.update(
+            {
+                "num_heads": num_heads,
+                "loglinear_max_levels": int(cfg.get("loglinear_max_levels", 8)),
+                "loglinear_chunk_size": int(cfg.get("loglinear_chunk_size", 8)),
+            }
+        )
     base_model = build_tiny_model_from_spec(model_spec).to(device)
     model = base_model
     compile_requested = bool(args.compile)

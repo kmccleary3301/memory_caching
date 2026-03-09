@@ -24,6 +24,7 @@
 - Inner-update batch/head invariance checks (DLA/Titans).
 - Differentiable inner-update temporal gradient-flow checks (DLA/Titans).
 - Rule-based adapter warning and metadata emission in benchmark CLI.
+- Original `LogLinearAttention` recurrent and chunked reference equivalence checks, including negative-path reference tests.
 
 ## Implemented with explicit caveats
 
@@ -37,3 +38,8 @@
 
 - Optimized or chunk-scan-parity original `LogLinearAttention` training path.
 - Paper-scale model-backed benchmark parity and throughput parity evidence.
+
+## Pilot evidence status
+
+- `LogLinearPP`, `tiny_loglinear_ref_lm`, and `tiny_loglinear_chunked_lm` now have a dedicated pilot execution lane.
+- This is pilot-scale checkpoint/benchmark evidence, not optimized-path evidence and not paper-scale parity evidence.

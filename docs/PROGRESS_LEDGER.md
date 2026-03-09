@@ -50,3 +50,9 @@ Date: 2026-03-06
 - literal paper-parity work remains outstanding, especially missing paper baselines such as `Log-Linear++`
 - final public-release polish remains outstanding, mainly release-boundary decisions such as license/publication closeout
 - a green scientific gate still does not imply full paper-table parity
+
+## Log-linear follow-on status (2026-03-08)
+
+- `LogLinearPP` now exists as a real baseline preset/config family.
+- original `LogLinearAttention` now has dense, recurrent, and correctness-first chunked reference paths in-package.
+- the next milestone is pilot-scale model-backed evidence for the new log-linear families.

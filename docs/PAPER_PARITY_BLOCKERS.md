@@ -47,6 +47,13 @@ Tracking placeholder:
 - `configs/train/loglinear_pp_mid.yaml`
 - `configs/train/loglinear_pp_target.yaml`
 
+Pilot-stage status:
+
+- `LogLinearPP` baseline implementation: present
+- original `LogLinearAttention` correctness-first references: present
+- pilot-scale model-backed evidence: in progress / non-parity
+- full paper-table parity: still blocked
+
 ### 2. Current scientific runs are tracking runs, not full table-scale parity runs
 
 - the current scientific artifact set uses:
